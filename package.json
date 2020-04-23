@@ -1,0 +1,54 @@
+{
+  "name": "batis",
+  "version": "0.0.0",
+  "description": "Writing and executing Hooks without React.",
+  "bugs": {
+    "url": "https://github.com/clebert/batis/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/clebert/batis.git"
+  },
+  "license": "MIT",
+  "author": "Clemens Akens <clebert@me.com>",
+  "sideEffects": false,
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/esm/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "prebuild": "rm -rf lib",
+    "build": "tsc --build tsconfig.cjs.json tsconfig.esm.json",
+    "ci": "run-p format:test lint test build",
+    "postci": "size-limit",
+    "format": "prettier --write '**/*.{html,js,json,md,ts,tsx,yml}'",
+    "format:test": "prettier --list-different '**/*.{html,js,json,md,ts,tsx,yml}'",
+    "lint": "tslint --config tslint.json --project tsconfig.json --format verbose",
+    "release": "npm version",
+    "postrelease": "git push --follow-tags",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.6",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.8.3",
+    "@babel/plugin-proposal-optional-chaining": "^7.9.0",
+    "@babel/preset-env": "^7.9.6",
+    "@babel/preset-typescript": "^7.9.0",
+    "@size-limit/preset-small-lib": "^4.4.5",
+    "@types/jest": "^25.2.1",
+    "jest": "^25.5.3",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.0.5",
+    "size-limit": "^4.4.5",
+    "tslint": "^6.1.2",
+    "typescript": "^3.8.3"
+  },
+  "size-limit": [
+    {
+      "path": "lib/esm/index.js",
+      "limit": "1.6 KB"
+    }
+  ]
+}
