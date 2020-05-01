@@ -72,7 +72,7 @@ describe('useReducer()', () => {
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('the identity of the returned dispatch function is stable', () => {
+  test('the identity of the returned dispatch function is stable', async () => {
     let initialDispatch: Dispatch<string> | undefined;
 
     const hook = jest.fn(() => {
@@ -95,7 +95,7 @@ describe('useReducer()', () => {
     initialDispatch!('b');
     initialDispatch!('c');
 
-    expect(result.getCurrent()).toBe('abc');
-    expect(hook).toBeCalledTimes(3);
+    await expect(result.getNextAsync()).resolves.toBe('abc');
+    expect(hook).toBeCalledTimes(2);
   });
 });

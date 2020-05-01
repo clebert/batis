@@ -1,4 +1,5 @@
 import {HookProcess, SetState, useEffect, useState} from '..';
+import {defer} from '../internals/defer';
 
 describe('useState()', () => {
   test('an initial state can be set once', () => {
@@ -32,31 +33,86 @@ describe('useState()', () => {
     expect(createInitialState).toBeCalledTimes(1);
   });
 
-  test('setting a new state executes the hook again', () => {
+  test('synchronously setting a new state executes the hook again', () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
       setState('b');
+      setState('c');
 
       return state;
     });
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('b');
+    expect(result.getCurrent()).toBe('c');
     expect(hook).toBeCalledTimes(2);
   });
 
-  test('setting the same state does not execute the hook again', () => {
+  test('asynchronously setting a new state executes the hook again', async () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
+      useEffect(() => {
+        setTimeout(() => {
+          setState('b');
+          setState('c');
+        }, 1);
+      }, []);
+
+      return state;
+    });
+
+    const {result} = HookProcess.start(hook, []);
+
+    expect(result.getCurrent()).toBe('a');
+    expect(hook).toBeCalledTimes(1);
+    await expect(result.getNextAsync()).resolves.toBe('c');
+    expect(hook).toBeCalledTimes(2);
+  });
+
+  test('synchronously setting the same state does not execute the hook again', () => {
+    const hook = jest.fn(() => {
+      const [state, setState] = useState('a');
+
+      setState('b');
       setState('a');
 
       return state;
     });
 
     const {result} = HookProcess.start(hook, []);
+
+    expect(result.getCurrent()).toBe('a');
+    expect(hook).toBeCalledTimes(1);
+  });
+
+  test('asynchronously setting the same state does not execute the hook again', async () => {
+    const deferred = defer<undefined>();
+
+    const hook = jest.fn(() => {
+      const [state, setState] = useState('a');
+
+      useEffect(() => {
+        setTimeout(() => {
+          setState('b');
+          setState('a');
+
+          setTimeout(() => {
+            deferred.resolve(undefined);
+          }, 1);
+        }, 1);
+      }, []);
+
+      return state;
+    });
+
+    const {result} = HookProcess.start(hook, []);
+
+    expect(result.getCurrent()).toBe('a');
+    expect(hook).toBeCalledTimes(1);
+
+    await deferred.promise;
 
     expect(result.getCurrent()).toBe('a');
     expect(hook).toBeCalledTimes(1);
@@ -146,11 +202,9 @@ describe('useState()', () => {
       const [state, setState] = useState('a');
 
       setTimeout(() => {
-        expect(() =>
-          setState(() => {
-            throw new Error('oops');
-          })
-        ).toThrow(new Error('oops'));
+        setState(() => {
+          throw new Error('oops');
+        });
       }, 1);
 
       return state;
@@ -194,7 +248,7 @@ describe('useState()', () => {
     expect(hook).toBeCalledTimes(4);
   });
 
-  test('the identity of the returned setState function is stable', () => {
+  test('the identity of the returned setState function is stable', async () => {
     let initialSetState: SetState<string> | undefined;
 
     const hook = jest.fn(() => {
@@ -214,7 +268,7 @@ describe('useState()', () => {
     initialSetState!((previousState) => previousState + 'b');
     initialSetState!((previousState) => previousState + 'c');
 
-    expect(result.getCurrent()).toBe('abc');
-    expect(hook).toBeCalledTimes(3);
+    await expect(result.getNextAsync()).resolves.toBe('abc');
+    expect(hook).toBeCalledTimes(2);
   });
 });

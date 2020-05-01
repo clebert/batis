@@ -127,11 +127,9 @@ describe('useEffect()', () => {
 
       useEffect(() => {
         setTimeout(() => {
-          expect(() =>
-            setState(() => {
-              throw new Error('oops');
-            })
-          ).toThrow(new Error('oops'));
+          setState(() => {
+            throw new Error('oops');
+          });
         }, 1);
 
         return cleanUpEffect;

@@ -51,7 +51,6 @@ export class HookProcess<THook extends Hook = Hook> {
   #current: ReturnType<THook>;
   #nextAsync: Deferred<ReturnType<THook>> | undefined;
   #stopped = false;
-  #updating = false;
 
   constructor(hook: THook, args: Parameters<THook>) {
     this.#hook = hook;
@@ -107,8 +106,6 @@ export class HookProcess<THook extends Hook = Hook> {
       );
     }
 
-    this.#updating = true;
-
     try {
       if (
         !this.#memory.isAllocated() ||
@@ -150,8 +147,6 @@ export class HookProcess<THook extends Hook = Hook> {
       }
 
       throw error;
-    } finally {
-      this.#updating = false;
     }
 
     return this.#current;
@@ -209,9 +204,9 @@ export class HookProcess<THook extends Hook = Hook> {
         setState: (state) => {
           memoryCell!.stateChanges = [...memoryCell!.stateChanges, state];
 
-          if (!this.#updating) {
-            this.update(this.#args);
-          }
+          Promise.resolve()
+            .then(() => this.update(this.#args))
+            .catch(() => undefined);
         },
         state: isFunction<CreateInitialState<TState>>(initialState)
           ? initialState()
@@ -272,15 +267,16 @@ export class HookProcess<THook extends Hook = Hook> {
 
     for (const memoryCell of this.#memory.memoryCells) {
       if (isKindOf<StateMemoryCell<unknown>>('StateMemoryCell', memoryCell)) {
+        const previousState = memoryCell.state;
+
         for (const stateChange of memoryCell.stateChanges) {
-          const state = isFunction<CreateState<unknown>>(stateChange)
+          memoryCell.state = isFunction<CreateState<unknown>>(stateChange)
             ? stateChange(memoryCell.state)
             : stateChange;
+        }
 
-          if (!Object.is(state, memoryCell.state)) {
-            memoryCell.state = state;
-            changed = true;
-          }
+        if (!Object.is(previousState, memoryCell.state)) {
+          changed = true;
         }
 
         memoryCell.stateChanges = [];
