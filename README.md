@@ -1,4 +1,4 @@
-# batis
+# Batis
 
 [![][ci-badge]][ci-link] [![][version-badge]][version-link]
 [![][license-badge]][license-link] [![][types-badge]][types-link]
@@ -30,6 +30,37 @@ Using `npm`:
 ```
 npm install batis --save
 ```
+
+## Motivation
+
+I am a frontend developer. One of the biggest problems in frontend development
+is managing state and deriving the UI from it as well as handling side effects
+that change the state. I mainly work with [React](https://reactjs.org) which
+allows me to solve the described problem via functional reactive programming.
+
+Reactive programming is generally understood to be programming using
+asynchronous data streams, which form the conceptual basis for libraries like
+[RxJS](https://github.com/ReactiveX/rxjs),
+[xstream](https://github.com/staltz/xstream), or as a counterpart to React
+[Cycle.js](https://cycle.js.org). In React, however, reactive programming is not
+about dealing with streams, but with so-called
+[Hooks](https://reactjs.org/docs/hooks-intro.html#motivation).
+
+A functional component is rendered, whereby side effects are declared based on
+its current state (using the
+[`useEffect`](https://reactjs.org/docs/hooks-overview.html#effect-hook) Hook),
+which in turn can lead to state changes (using the
+[`useState`](https://reactjs.org/docs/hooks-overview.html#state-hook) Hook) and
+thus to further renderings.
+
+In contrast to the concept of streams, the concept of Hooks was something I
+liked from the beginning. I find them very intuitive to read and write. I wanted
+to use this kind of reactive programming in other areas as well, for example for
+programming web workers, AWS Lambda handlers, or even JavaScript-controlled
+robots. Therefore I wrote _Batis_...
+
+Actually, I wrote [Ironhook](https://github.com/clebert/ironhook) first. But now
+I don't like the name anymore, nor the API.
 
 ## Usage example
 
@@ -67,6 +98,30 @@ console.log(update(['Welcome'])); // Welcome, John Doe!
 result.getNextAsync().then(console.log); // Welcome, Jane Doe!
 ```
 
+### Testing React/Preact Hooks
+
+The API of _Batis_ is strongly influenced by
+[React Testing Library](https://github.com/testing-library/react-testing-library).
+I wanted to create a tool that was not only suitable for standalone use of Hooks
+but also for testing existing React/Preact Hooks. As long as the React/Preact
+Hooks to be tested use only the subset of the Hooks implemented by _Batis_, a
+test using [Jest](https://jestjs.io) can be set up as follows.
+
+Testing React Hooks:
+
+```js
+jest.mock('react', () => ({
+  ...require('react'),
+  ...require('batis'),
+}));
+```
+
+Testing Preact Hooks:
+
+```js
+jest.mock('preact/hooks', () => require('batis'));
+```
+
 ## API reference
 
 The [React Hooks API reference](https://reactjs.org/docs/hooks-reference.html)
@@ -74,8 +129,8 @@ also applies to this library and should be consulted.
 
 ### Implementation status
 
-Below you can see the implementation status of the various Hooks provided by
-React:
+Below you can see the implementation status of the built-in subset of React
+Hooks:
 
 | Hook                                         | Status        |
 | -------------------------------------------- | ------------- |
@@ -102,7 +157,7 @@ React:
 [uselayouteffect]: https://reactjs.org/docs/hooks-reference.html#uselayouteffect
 [usedebugvalue]: https://reactjs.org/docs/hooks-reference.html#usedebugvalue
 
-### Types
+### Type definitions
 
 ```ts
 class HookProcess<THook extends Hook> {
