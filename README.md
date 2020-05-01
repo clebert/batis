@@ -15,7 +15,7 @@
 [size-badge]: https://badgen.net/bundlephobia/minzip/batis
 [size-link]: https://bundlephobia.com/result?p=batis
 
-Writing and executing Hooks without React.
+A JavaScript library for reactive programming using React-like Hooks.
 
 ## Installation
 
