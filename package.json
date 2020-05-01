@@ -1,6 +1,6 @@
 {
   "name": "batis",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Writing and executing Hooks without React.",
   "bugs": {
     "url": "https://github.com/clebert/batis/issues"
