@@ -1,7 +1,8 @@
 import {HookProcess, useMemo} from '..';
+import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useMemo()', () => {
-  test('a memoized value is only re-computed if one of its dependencies changes', () => {
+  test('a memoized value is only re-computed if one of its dependencies changes', async () => {
     const createValue1 = jest.fn();
     const createValue2 = jest.fn();
 
@@ -36,6 +37,7 @@ describe('useMemo()', () => {
 
     update(['b', 'y']);
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(5);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(3);

@@ -1,7 +1,8 @@
 import {HookProcess, useCallback} from '..';
+import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useCallback()', () => {
-  test('a memoized callback changes only if one of its dependencies changes', () => {
+  test('a memoized callback changes only if one of its dependencies changes', async () => {
     let memoizedCallback1: (() => void) | undefined;
     let memoizedCallback2: (() => void) | undefined;
 
@@ -60,5 +61,8 @@ describe('useCallback()', () => {
     expect(hook).toHaveBeenCalledTimes(5);
     expect(memoizedCallback1).toBe(callbackA);
     expect(memoizedCallback2).toBe(callbackH);
+
+    await queueMacrotasks(10);
+    expect(hook).toHaveBeenCalledTimes(5);
   });
 });

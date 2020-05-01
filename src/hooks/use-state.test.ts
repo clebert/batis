@@ -1,8 +1,10 @@
+// tslint:disable: no-floating-promises
+
 import {HookProcess, SetState, useEffect, useState} from '..';
-import {defer} from '../internals/defer';
+import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useState()', () => {
-  test('an initial state can be set once', () => {
+  test('an initial state can be set once', async () => {
     const hook = jest.fn((arg) => {
       const [state] = useState(arg);
 
@@ -13,10 +15,12 @@ describe('useState()', () => {
 
     expect(result.getCurrent()).toBe('a');
     expect(update(['b'])).toBe('a');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(2);
   });
 
-  test('an initial state can be created lazily once', () => {
+  test('an initial state can be created lazily once', async () => {
     const createInitialState = jest.fn(() => 'a');
 
     const hook = jest.fn(() => {
@@ -29,11 +33,13 @@ describe('useState()', () => {
 
     expect(result.getCurrent()).toBe('a');
     expect(update([])).toBe('a');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(2);
     expect(createInitialState).toBeCalledTimes(1);
   });
 
-  test('synchronously setting a new state executes the hook again', () => {
+  test('synchronously setting a new state executes the hook again', async () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
@@ -46,6 +52,8 @@ describe('useState()', () => {
     const {result} = HookProcess.start(hook, []);
 
     expect(result.getCurrent()).toBe('c');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -54,10 +62,10 @@ describe('useState()', () => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
-        setTimeout(() => {
+        queueMacrotasks(1).then(() => {
           setState('b');
           setState('c');
-        }, 1);
+        });
       }, []);
 
       return state;
@@ -68,10 +76,12 @@ describe('useState()', () => {
     expect(result.getCurrent()).toBe('a');
     expect(hook).toBeCalledTimes(1);
     await expect(result.getNextAsync()).resolves.toBe('c');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(2);
   });
 
-  test('synchronously setting the same state does not execute the hook again', () => {
+  test('synchronously setting the same state does not execute the hook again', async () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
@@ -84,24 +94,20 @@ describe('useState()', () => {
     const {result} = HookProcess.start(hook, []);
 
     expect(result.getCurrent()).toBe('a');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(1);
   });
 
   test('asynchronously setting the same state does not execute the hook again', async () => {
-    const deferred = defer<undefined>();
-
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
-        setTimeout(() => {
+        queueMacrotasks(1).then(() => {
           setState('b');
           setState('a');
-
-          setTimeout(() => {
-            deferred.resolve(undefined);
-          }, 1);
-        }, 1);
+        });
       }, []);
 
       return state;
@@ -112,13 +118,12 @@ describe('useState()', () => {
     expect(result.getCurrent()).toBe('a');
     expect(hook).toBeCalledTimes(1);
 
-    await deferred.promise;
-
+    await queueMacrotasks(10);
     expect(result.getCurrent()).toBe('a');
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('creating a new state executes the hook again', () => {
+  test('creating a new state executes the hook again', async () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
@@ -133,10 +138,12 @@ describe('useState()', () => {
     const {result} = HookProcess.start(hook, []);
 
     expect(result.getCurrent()).toBe('abc');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(2);
   });
 
-  test('creating the same state does not execute the hook again', () => {
+  test('creating the same state does not execute the hook again', async () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
@@ -148,10 +155,12 @@ describe('useState()', () => {
     const {result} = HookProcess.start(hook, []);
 
     expect(result.getCurrent()).toBe('a');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('an error caused by a state initialization prevents the hook process from being started', () => {
+  test('an error caused by a state initialization prevents the hook process from being started', async () => {
     const hook = jest.fn(() => {
       useState(() => {
         throw new Error('oops');
@@ -159,10 +168,12 @@ describe('useState()', () => {
     });
 
     expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('an error caused by a state change prevents the hook process from being started', () => {
+  test('an error caused by a state change prevents the hook process from being started', async () => {
     const hook = jest.fn(() => {
       const [, setState] = useState('a');
 
@@ -172,10 +183,12 @@ describe('useState()', () => {
     });
 
     expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('an error caused by a state change triggered by an update stops the hook process', () => {
+  test('an error caused by a state change triggered by an update stops the hook process', async () => {
     const hook = jest.fn((arg) => {
       const [state, setState] = useState(arg);
 
@@ -194,6 +207,8 @@ describe('useState()', () => {
     expect(isStopped()).toBe(false);
     expect(() => update(['b'])).toThrow(new Error('oops'));
     expect(isStopped()).toBe(true);
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -201,11 +216,13 @@ describe('useState()', () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
-      setTimeout(() => {
-        setState(() => {
-          throw new Error('oops');
+      useEffect(() => {
+        queueMacrotasks(1).then(() => {
+          setState(() => {
+            throw new Error('oops');
+          });
         });
-      }, 1);
+      }, []);
 
       return state;
     });
@@ -216,10 +233,12 @@ describe('useState()', () => {
     expect(isStopped()).toBe(false);
     await expect(result.getNextAsync()).rejects.toEqual(new Error('oops'));
     expect(isStopped()).toBe(true);
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('direct state changes are applied before those triggered by synchronous effects', () => {
+  test('direct state changes are applied before those triggered by synchronous effects', async () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
@@ -245,6 +264,8 @@ describe('useState()', () => {
     const {result} = HookProcess.start(hook, []);
 
     expect(result.getCurrent()).toBe('abcde');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(4);
   });
 
@@ -269,6 +290,8 @@ describe('useState()', () => {
     initialSetState!((previousState) => previousState + 'c');
 
     await expect(result.getNextAsync()).resolves.toBe('abc');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(2);
   });
 });

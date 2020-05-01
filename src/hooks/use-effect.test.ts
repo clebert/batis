@@ -1,7 +1,10 @@
+// tslint:disable: no-floating-promises
+
 import {HookProcess, useEffect, useState} from '..';
+import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useEffect()', () => {
-  test('an effect triggers only if one of its dependencies changes', () => {
+  test('an effect triggers only if one of its dependencies changes', async () => {
     const effectWithoutDependencies = jest.fn();
     const effectWithEmptyDependencies = jest.fn();
     const effectWithDependencies = jest.fn();
@@ -42,13 +45,14 @@ describe('useEffect()', () => {
 
     update(['b', 'y']);
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(5);
     expect(effectWithoutDependencies).toHaveBeenCalledTimes(5);
     expect(effectWithEmptyDependencies).toHaveBeenCalledTimes(1);
     expect(effectWithDependencies).toHaveBeenCalledTimes(3);
   });
 
-  test('an effect is first cleaned up before it triggers again', () => {
+  test('an effect is first cleaned up before it triggers again', async () => {
     const cleanUpEffect1 = jest.fn();
     const effect1 = jest.fn(() => cleanUpEffect1);
 
@@ -70,6 +74,7 @@ describe('useEffect()', () => {
 
     update([]);
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(2);
     expect(cleanUpEffect1).toHaveBeenCalledTimes(1);
     expect(effect1).toHaveBeenCalledTimes(2);
@@ -77,7 +82,7 @@ describe('useEffect()', () => {
     expect(effect2).toHaveBeenCalledTimes(1);
   });
 
-  test('an effect is cleaned up once as a result of stopping the hook process', () => {
+  test('an effect is cleaned up once as a result of stopping the hook process', async () => {
     const cleanUpEffect = jest.fn();
     const effect = jest.fn(() => cleanUpEffect);
 
@@ -94,12 +99,13 @@ describe('useEffect()', () => {
     stop();
     stop();
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(1);
   });
 
-  test('an effect is cleaned up as a result of a synchronous error', () => {
+  test('an effect is cleaned up as a result of a synchronous error', async () => {
     const cleanUpEffect = jest.fn();
 
     const hook = jest.fn(() => {
@@ -115,6 +121,8 @@ describe('useEffect()', () => {
     });
 
     expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
+
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
   });
@@ -126,11 +134,11 @@ describe('useEffect()', () => {
       const [, setState] = useState('a');
 
       useEffect(() => {
-        setTimeout(() => {
+        queueMacrotasks(1).then(() =>
           setState(() => {
             throw new Error('oops');
-          });
-        }, 1);
+          })
+        );
 
         return cleanUpEffect;
       }, []);
@@ -140,14 +148,14 @@ describe('useEffect()', () => {
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(0);
-
     await expect(result.getNextAsync()).rejects.toEqual(new Error('oops'));
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
   });
 
-  test('an effect is cleaned up despite a previous error', () => {
+  test('an effect is cleaned up despite a previous error', async () => {
     const cleanUpEffect1 = jest.fn();
 
     const cleanUpEffect2 = jest.fn(() => {
@@ -173,6 +181,7 @@ describe('useEffect()', () => {
 
     stop();
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect1).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect2).toHaveBeenCalledTimes(1);

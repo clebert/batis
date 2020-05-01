@@ -1,7 +1,10 @@
+// tslint:disable: no-floating-promises
+
 import {HookProcess, useEffect, useRef, useState} from '..';
+import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useRef()', () => {
-  test('a ref value is persisted over several re-executions of the hook', () => {
+  test('a ref value is persisted over several re-executions of the hook', async () => {
     const hook = jest.fn(() => {
       const ref1 = useRef('a');
       const ref2 = useRef('x');
@@ -22,6 +25,8 @@ describe('useRef()', () => {
     expect(update([])).toBe('ay');
     expect(hook).toBeCalledTimes(3);
     expect(update([])).toBe('ay');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(4);
   });
 
@@ -31,13 +36,8 @@ describe('useRef()', () => {
       const ref = useRef('x');
 
       useEffect(() => {
-        setTimeout(() => {
-          ref.current = 'y';
-
-          setTimeout(() => {
-            setState('b');
-          }, 1);
-        }, 1);
+        queueMacrotasks(1).then(() => (ref.current = 'y'));
+        queueMacrotasks(2).then(() => setState('b'));
       }, []);
 
       return state + ref.current;
@@ -47,6 +47,8 @@ describe('useRef()', () => {
 
     expect(result.getCurrent()).toBe('ax');
     await expect(result.getNextAsync()).resolves.toBe('by');
+
+    await queueMacrotasks(10);
     expect(hook).toBeCalledTimes(2);
   });
 });

@@ -1,7 +1,10 @@
+// tslint:disable: no-floating-promises
+
 import {HookProcess, useEffect, useRef, useState} from '.';
+import {queueMacrotasks} from './internals/queue-macrotasks';
 
 describe('HookProcess', () => {
-  test('making fewer hook calls causes an error', () => {
+  test('making fewer hook calls causes an error', async () => {
     const hook = jest.fn(() => {
       const [firstTime, setFirstTime] = useState(false);
 
@@ -21,10 +24,11 @@ describe('HookProcess', () => {
       new Error('The number of hook calls must not change.')
     );
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('making more hook calls causes an error', () => {
+  test('making more hook calls causes an error', async () => {
     const hook = jest.fn(() => {
       const [firstTime, setFirstTime] = useState(false);
 
@@ -44,10 +48,11 @@ describe('HookProcess', () => {
       new Error('The number of hook calls must not change.')
     );
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('changing the order of hook calls causes an error', () => {
+  test('changing the order of hook calls causes an error', async () => {
     const hook = jest.fn(() => {
       const [firstTime, setFirstTime] = useState(false);
 
@@ -68,10 +73,11 @@ describe('HookProcess', () => {
       new Error('The order of hook calls must not change.')
     );
 
+    await queueMacrotasks(10);
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('changing the existence of hook dependencies causes an error', () => {
+  test('changing the existence of hook dependencies causes an error', async () => {
     const hook1 = jest.fn(() => {
       const [firstTime, setFirstTime] = useState(false);
 
@@ -90,6 +96,7 @@ describe('HookProcess', () => {
       new Error('The existence of hook dependencies must not change.')
     );
 
+    await queueMacrotasks(10);
     expect(hook1).toHaveBeenCalledTimes(2);
 
     const hook2 = jest.fn(() => {
@@ -110,10 +117,11 @@ describe('HookProcess', () => {
       new Error('The existence of hook dependencies must not change.')
     );
 
+    await queueMacrotasks(10);
     expect(hook2).toHaveBeenCalledTimes(2);
   });
 
-  test('changing the number of hook dependencies causes an error', () => {
+  test('changing the number of hook dependencies causes an error', async () => {
     const hook1 = jest.fn(() => {
       const [firstTime, setFirstTime] = useState(false);
 
@@ -132,6 +140,7 @@ describe('HookProcess', () => {
       new Error('The order and number of hook dependencies must not change.')
     );
 
+    await queueMacrotasks(10);
     expect(hook1).toHaveBeenCalledTimes(2);
 
     const hook2 = jest.fn(() => {
@@ -152,6 +161,7 @@ describe('HookProcess', () => {
       new Error('The order and number of hook dependencies must not change.')
     );
 
+    await queueMacrotasks(10);
     expect(hook2).toHaveBeenCalledTimes(2);
   });
 
@@ -235,13 +245,8 @@ describe('HookProcess', () => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
-        setTimeout(() => {
-          setState('a');
-
-          setTimeout(() => {
-            setState('b');
-          }, 1);
-        }, 1);
+        queueMacrotasks(1).then(() => setState('a'));
+        queueMacrotasks(2).then(() => setState('b'));
       }, []);
 
       return state;
@@ -257,13 +262,8 @@ describe('HookProcess', () => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
-        setTimeout(() => {
-          setState('b');
-
-          setTimeout(() => {
-            setState('c');
-          }, 1);
-        }, 1);
+        queueMacrotasks(1).then(() => setState('b'));
+        queueMacrotasks(2).then(() => setState('c'));
       }, []);
 
       return state;
