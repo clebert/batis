@@ -15,19 +15,19 @@ import {
 
 export {Effect, CleanUpEffect, CreateState, SetState};
 
-export type Hook<TResultValue> = (...args: any[]) => TResultValue;
+export type Hook = (...args: any[]) => any;
 
-export interface HookResult<TResultValue> {
-  getCurrent(): TResultValue;
-  getNextAsync(): Promise<TResultValue>;
+export interface Result<THook extends Hook> {
+  getCurrent(): ReturnType<THook>;
+  getNextAsync(): Promise<ReturnType<THook>>;
 }
 
 export type CreateInitialState<TState> = () => TState;
 
-let active: HookProcess<Hook<unknown>, unknown> | undefined;
+let active: HookProcess | undefined;
 
-export class HookProcess<THook extends Hook<TResultValue>, TResultValue> {
-  static getActive(): HookProcess<Hook<unknown>, unknown> {
+export class HookProcess<THook extends Hook = Hook> {
+  static getActive(): HookProcess {
     if (!active) {
       throw new Error(
         'Hooks can only be called inside the body of an active hook.'
@@ -37,19 +37,19 @@ export class HookProcess<THook extends Hook<TResultValue>, TResultValue> {
     return active;
   }
 
-  static start<THook extends Hook<TResultValue>, TResultValue>(
+  static start<THook extends Hook>(
     hook: THook,
     args: Parameters<THook>
-  ): HookProcess<THook, TResultValue> {
-    return new HookProcess<THook, TResultValue>(hook, args);
+  ): HookProcess<THook> {
+    return new HookProcess<THook>(hook, args);
   }
 
   readonly #memory: Memory = new Memory();
 
   #hook: THook;
   #args: Parameters<THook>;
-  #current: TResultValue;
-  #nextAsync: Deferred<TResultValue> | undefined;
+  #current: ReturnType<THook>;
+  #nextAsync: Deferred<ReturnType<THook>> | undefined;
   #stopped = false;
   #updating = false;
 
@@ -59,7 +59,7 @@ export class HookProcess<THook extends Hook<TResultValue>, TResultValue> {
     this.#current = this.update(args);
   }
 
-  get result(): HookResult<TResultValue> {
+  get result(): Result<THook> {
     return {
       getCurrent: () => {
         if (this.#stopped) {
@@ -100,7 +100,7 @@ export class HookProcess<THook extends Hook<TResultValue>, TResultValue> {
     }
   };
 
-  readonly update = (args: Parameters<THook>): TResultValue => {
+  readonly update = (args: Parameters<THook>): ReturnType<THook> => {
     if (this.#stopped) {
       throw new Error(
         'The hook process has already stopped and can therefore no longer be updated.'
@@ -117,7 +117,7 @@ export class HookProcess<THook extends Hook<TResultValue>, TResultValue> {
       ) {
         this.#args = args;
 
-        let current: TResultValue;
+        let current: ReturnType<THook>;
 
         do {
           current = this.#execute(args);
@@ -253,7 +253,7 @@ export class HookProcess<THook extends Hook<TResultValue>, TResultValue> {
     return memoryCell.value;
   };
 
-  readonly #execute = (args: Parameters<THook>): TResultValue => {
+  readonly #execute = (args: Parameters<THook>): ReturnType<THook> => {
     active = this;
 
     try {

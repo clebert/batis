@@ -105,24 +105,28 @@ React:
 ### Types
 
 ```ts
-class HookProcess<THook, TResultValue> {
-  static start<THook, TResultValue>(
+class HookProcess<THook extends Hook> {
+  static start<THook extends Hook>(
     hook: THook,
     args: Parameters<THook>
-  ): HookProcess<THook, TResultValue>;
+  ): HookProcess<THook>;
 
-  get result(): HookResult<TResultValue>;
+  get result(): Result<THook>;
 
   readonly isStopped: () => boolean;
   readonly stop: () => void;
-  readonly update: (args: Parameters<THook>) => TResultValue;
+  readonly update: (args: Parameters<THook>) => ReturnType<THook>;
 }
 ```
 
 ```ts
-interface HookResult<TResultValue> {
-  getCurrent(): TResultValue;
-  getNextAsync(): Promise<TResultValue>;
+type Hook = (...args: any[]) => any;
+```
+
+```ts
+interface Result<THook extends Hook> {
+  getCurrent(): ReturnType<THook>;
+  getNextAsync(): Promise<ReturnType<THook>>;
 }
 ```
 
