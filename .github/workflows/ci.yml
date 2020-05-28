@@ -20,4 +20,6 @@ jobs:
       - name: Run CI checks
         env:
           CI: true
-        run: yarn ci
+        run: |
+          yarn ci
+          yarn start

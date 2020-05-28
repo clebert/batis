@@ -1,18 +1,18 @@
 {
   "compilerOptions": {
+    "declaration": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2020", "DOM"],
-    "module": "ES2020",
+    "lib": ["ES2019", "DOM"],
+    "module": "ESNext",
     "moduleResolution": "Node",
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "strict": true,
-    "target": "ES2020",
     "pretty": true,
-    "declaration": true,
-    "esModuleInterop": true
+    "strict": true,
+    "target": "ES2019"
   },
   "include": ["src/**/*"]
 }

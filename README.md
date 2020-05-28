@@ -17,6 +17,8 @@
 
 A JavaScript library for reactive programming using React-like Hooks.
 
+<img src="./eagle.jpg"/>
+
 ## Installation
 
 Using `yarn`:
@@ -31,7 +33,7 @@ Using `npm`:
 npm install batis --save
 ```
 
-## Motivation
+## Rationale
 
 I am a frontend developer. One of the biggest problems in frontend development
 is managing state and deriving the UI from it as well as handling side effects
