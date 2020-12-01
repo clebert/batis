@@ -21,14 +21,6 @@ A JavaScript library for reactive programming using React-like Hooks.
 
 ## Installation
 
-Using `yarn`:
-
-```
-yarn add batis
-```
-
-Using `npm`:
-
 ```
 npm install batis --save
 ```
@@ -60,9 +52,6 @@ liked from the beginning. I find them very intuitive to read and write. I wanted
 to use this kind of reactive programming in other areas as well, for example for
 programming web workers, AWS Lambda handlers, or even JavaScript-controlled
 robots. Therefore I wrote _Batis_...
-
-Actually, I wrote [Ironhook](https://github.com/clebert/ironhook) first. But now
-I don't like the name anymore, nor the API.
 
 ## Usage example
 
@@ -192,15 +181,15 @@ interface Result<THook extends Hook> {
 ### Publishing a new release
 
 ```
-yarn release patch
+npm run release patch
 ```
 
 ```
-yarn release minor
+npm run release minor
 ```
 
 ```
-yarn release major
+npm run release major
 ```
 
 After a new release has been created by pushing the tag, it must be published

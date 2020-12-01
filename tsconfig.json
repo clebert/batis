@@ -3,16 +3,16 @@
     "declaration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2019", "DOM"],
+    "lib": ["DOM", "ESNext"],
     "module": "ESNext",
     "moduleResolution": "Node",
+    "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "pretty": true,
     "strict": true,
-    "target": "ES2019"
+    "target": "ES2020"
   },
   "include": ["src/**/*"]
 }
