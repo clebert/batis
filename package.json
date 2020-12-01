@@ -19,8 +19,9 @@
     "lib"
   ],
   "scripts": {
-    "prebuild": "rm -rf lib",
-    "build": "tsc --build tsconfig.cjs.json tsconfig.esm.json --pretty",
+    "build": "run-p build:*",
+    "build:esm": "tsc --project tsconfig.esm.json --incremental --pretty",
+    "build:cjs": "tsc --project tsconfig.cjs.json --incremental --pretty",
     "ci": "run-p format:test lint test build",
     "postci": "size-limit",
     "format": "prettier --write '**/*.{html,js,json,md,ts,tsx,yml}'",
