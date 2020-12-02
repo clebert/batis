@@ -1,8 +1,8 @@
 import {useMemo} from './use-memo';
 
-export function useCallback<TCallback>(
+export function useCallback<TCallback extends (...args: any[]) => any>(
   callback: TCallback,
-  dependencies: unknown[]
+  dependencies: readonly unknown[]
 ): TCallback {
   return useMemo(() => callback, dependencies);
 }

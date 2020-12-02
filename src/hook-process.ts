@@ -222,7 +222,7 @@ export class HookProcess<THook extends Hook = Hook> {
 
   readonly registerMemoHook = <TValue>(
     createValue: () => TValue,
-    dependencies: unknown[]
+    dependencies: readonly unknown[]
   ): TValue => {
     if (this !== active) {
       throw new Error('Please use the separately exported useMemo() function.');

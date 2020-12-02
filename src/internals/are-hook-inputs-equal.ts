@@ -1,6 +1,6 @@
 export function areHookInputsEqual(
-  previousDependencies: unknown[] | undefined,
-  currentDependencies: unknown[] | undefined
+  previousDependencies: readonly unknown[] | undefined,
+  currentDependencies: readonly unknown[] | undefined
 ): boolean {
   if (!previousDependencies || !currentDependencies) {
     if (previousDependencies || currentDependencies) {

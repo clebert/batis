@@ -10,7 +10,7 @@ export interface EffectMemoryCell {
 
   outdated: boolean;
   effect: Effect;
-  dependencies: unknown[] | undefined;
+  dependencies: readonly unknown[] | undefined;
   cleanUpEffect?: CleanUpEffect;
 }
 
@@ -32,7 +32,7 @@ export interface MemoMemoryCell<TValue> {
   readonly kind: 'MemoMemoryCell';
 
   value: TValue;
-  dependencies: unknown[];
+  dependencies: readonly unknown[];
 }
 
 export class Memory {
