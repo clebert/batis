@@ -20,8 +20,8 @@
   ],
   "scripts": {
     "build": "run-p build:*",
-    "build:esm": "tsc --project tsconfig.esm.json --incremental --pretty",
     "build:cjs": "tsc --project tsconfig.cjs.json --incremental --pretty",
+    "build:esm": "tsc --project tsconfig.esm.json --incremental --pretty",
     "ci": "run-p format:test lint test build",
     "postci": "size-limit",
     "format": "prettier --write '**/*.{html,js,json,md,ts,tsx,yml}'",
@@ -34,8 +34,6 @@
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.12.1",
-    "@babel/plugin-proposal-optional-chaining": "^7.12.7",
     "@babel/preset-env": "^7.12.7",
     "@babel/preset-typescript": "^7.12.7",
     "@size-limit/preset-small-lib": "^4.9.0",
