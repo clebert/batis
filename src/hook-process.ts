@@ -17,9 +17,10 @@ export {Effect, CleanUpEffect, CreateState, SetState};
 
 export type Hook = (...args: any[]) => any;
 
-export interface Result<THook extends Hook> {
-  getCurrent(): ReturnType<THook>;
-  getNextAsync(): Promise<ReturnType<THook>>;
+export interface Result<THook extends Hook>
+  extends AsyncIterable<ReturnType<THook>> {
+  readonly value: ReturnType<THook>;
+  readonly next: Promise<IteratorResult<ReturnType<THook>, undefined>>;
 }
 
 export type CreateInitialState<TState> = () => TState;
@@ -48,36 +49,48 @@ export class HookProcess<THook extends Hook = Hook> {
 
   #hook: THook;
   #args: Parameters<THook>;
-  #current: ReturnType<THook>;
-  #nextAsync: Deferred<ReturnType<THook>> | undefined;
+  #value: ReturnType<THook>;
   #stopped = false;
+  #iteratorResult: Deferred<IteratorResult<ReturnType<THook>, any>> | undefined;
 
   constructor(hook: THook, args: Parameters<THook>) {
     this.#hook = hook;
     this.#args = args;
-    this.#current = this.update(args);
+    this.#value = this.update(args);
   }
 
   get result(): Result<THook> {
-    return {
-      getCurrent: () => {
-        if (this.#stopped) {
-          throw new Error('The hook process has already stopped.');
-        }
+    const getValue = () => {
+      if (this.#stopped) {
+        throw new Error('The hook process has already stopped.');
+      }
 
-        return this.#current;
+      return this.#value;
+    };
+
+    return {
+      get value(): ReturnType<THook> {
+        return getValue();
       },
 
-      getNextAsync: () => {
-        if (this.#stopped) {
-          throw new Error('The hook process has already stopped.');
-        }
+      get next(): Promise<IteratorResult<ReturnType<THook>>> {
+        return this[Symbol.asyncIterator]().next();
+      },
 
-        if (this.#nextAsync === undefined) {
-          this.#nextAsync = defer();
-        }
+      [Symbol.asyncIterator]: () => {
+        return {
+          next: () => {
+            if (this.#stopped) {
+              throw new Error('The hook process has already stopped.');
+            }
 
-        return this.#nextAsync.promise;
+            if (this.#iteratorResult === undefined) {
+              this.#iteratorResult = defer();
+            }
+
+            return this.#iteratorResult.promise;
+          },
+        };
       },
     };
   }
@@ -91,11 +104,7 @@ export class HookProcess<THook extends Hook = Hook> {
       this.#stopped = true;
 
       this.#cleanUpEffects(true);
-
-      if (this.#nextAsync) {
-        this.#nextAsync.reject(new Error('The hook process has stopped.'));
-        this.#nextAsync = undefined;
-      }
+      this.#iteratorResult?.resolve({done: true, value: undefined});
     }
   };
 
@@ -114,42 +123,38 @@ export class HookProcess<THook extends Hook = Hook> {
       ) {
         this.#args = args;
 
-        let current: ReturnType<THook>;
+        let value: ReturnType<THook>;
 
         do {
-          current = this.#execute(args);
+          value = this.#execute(args);
 
           while (this.#applyStateChanges()) {
-            current = this.#execute(args);
+            value = this.#execute(args);
           }
 
           this.#cleanUpEffects();
           this.#triggerEffects();
         } while (this.#applyStateChanges());
 
-        if (!Object.is(current, this.#current)) {
-          this.#current = current;
+        if (!Object.is(value, this.#value)) {
+          this.#value = value;
 
-          if (this.#nextAsync) {
-            this.#nextAsync.resolve(current);
-            this.#nextAsync = undefined;
-          }
+          this.#iteratorResult = void this.#iteratorResult?.resolve({
+            done: false,
+            value,
+          });
         }
       }
     } catch (error) {
       this.#stopped = true;
 
       this.#cleanUpEffects(true);
-
-      if (this.#nextAsync) {
-        this.#nextAsync.reject(error);
-        this.#nextAsync = undefined;
-      }
+      this.#iteratorResult?.reject(error);
 
       throw error;
     }
 
-    return this.#current;
+    return this.#value;
   };
 
   readonly registerEffectHook = (
@@ -252,11 +257,11 @@ export class HookProcess<THook extends Hook = Hook> {
     active = this;
 
     try {
-      const current = this.#hook(...args);
+      const value = this.#hook(...args);
 
       this.#memory.validateAndReset();
 
-      return current;
+      return value;
     } finally {
       active = undefined;
     }

@@ -18,7 +18,7 @@ describe('useRef()', () => {
 
     const {result, update} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('ax');
+    expect(result.value).toBe('ax');
     expect(hook).toBeCalledTimes(1);
     expect(update([])).toBe('ay');
     expect(hook).toBeCalledTimes(2);
@@ -27,6 +27,7 @@ describe('useRef()', () => {
     expect(update([])).toBe('ay');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(4);
   });
 
@@ -45,10 +46,11 @@ describe('useRef()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('ax');
-    await expect(result.getNextAsync()).resolves.toBe('by');
+    expect(result.value).toBe('ax');
+    expect(await result.next).toEqual({done: false, value: 'by'});
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 });

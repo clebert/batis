@@ -63,6 +63,7 @@ describe('useCallback()', () => {
     expect(memoizedCallback2).toBe(callbackH);
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(5);
   });
 });

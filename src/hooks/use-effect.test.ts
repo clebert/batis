@@ -46,6 +46,7 @@ describe('useEffect()', () => {
     update(['b', 'y']);
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(5);
     expect(effectWithoutDependencies).toHaveBeenCalledTimes(5);
     expect(effectWithEmptyDependencies).toHaveBeenCalledTimes(1);
@@ -75,6 +76,7 @@ describe('useEffect()', () => {
     update([]);
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(2);
     expect(cleanUpEffect1).toHaveBeenCalledTimes(1);
     expect(effect1).toHaveBeenCalledTimes(2);
@@ -100,6 +102,7 @@ describe('useEffect()', () => {
     stop();
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(1);
@@ -123,6 +126,7 @@ describe('useEffect()', () => {
     expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
   });
@@ -148,9 +152,10 @@ describe('useEffect()', () => {
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(0);
-    await expect(result.getNextAsync()).rejects.toEqual(new Error('oops'));
+    await expect(result.next).rejects.toEqual(new Error('oops'));
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
   });
@@ -182,6 +187,7 @@ describe('useEffect()', () => {
     stop();
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect1).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect2).toHaveBeenCalledTimes(1);

@@ -38,6 +38,7 @@ describe('useMemo()', () => {
     update(['b', 'y']);
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(5);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(3);

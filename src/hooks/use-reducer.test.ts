@@ -11,10 +11,11 @@ describe('useReducer()', () => {
 
     const {result, update} = HookProcess.start(hook, ['a']);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(update(['b'])).toBe('a');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -29,11 +30,12 @@ describe('useReducer()', () => {
 
     const {result, update} = HookProcess.start(hook, ['a']);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(update(['a'])).toBe('a');
     expect(update(['b'])).toBe('a');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(3);
     expect(init).toBeCalledTimes(1);
   });
@@ -55,9 +57,10 @@ describe('useReducer()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('abc');
+    expect(result.value).toBe('abc');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -75,9 +78,10 @@ describe('useReducer()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -104,9 +108,10 @@ describe('useReducer()', () => {
     initialDispatch!('b');
     initialDispatch!('c');
 
-    await expect(result.getNextAsync()).resolves.toBe('abc');
+    expect(await result.next).toEqual({done: false, value: 'abc'});
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 });

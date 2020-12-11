@@ -25,6 +25,7 @@ describe('HookProcess', () => {
     );
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
@@ -49,6 +50,7 @@ describe('HookProcess', () => {
     );
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
@@ -74,6 +76,7 @@ describe('HookProcess', () => {
     );
 
     await queueMacrotasks(10);
+
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
@@ -97,6 +100,7 @@ describe('HookProcess', () => {
     );
 
     await queueMacrotasks(10);
+
     expect(hook1).toHaveBeenCalledTimes(2);
 
     const hook2 = jest.fn(() => {
@@ -118,6 +122,7 @@ describe('HookProcess', () => {
     );
 
     await queueMacrotasks(10);
+
     expect(hook2).toHaveBeenCalledTimes(2);
   });
 
@@ -141,6 +146,7 @@ describe('HookProcess', () => {
     );
 
     await queueMacrotasks(10);
+
     expect(hook1).toHaveBeenCalledTimes(2);
 
     const hook2 = jest.fn(() => {
@@ -162,6 +168,7 @@ describe('HookProcess', () => {
     );
 
     await queueMacrotasks(10);
+
     expect(hook2).toHaveBeenCalledTimes(2);
   });
 
@@ -171,39 +178,37 @@ describe('HookProcess', () => {
     );
   });
 
-  test('calling result.getCurrent() of a stopped hook process causes an error', () => {
+  test('calling result.value of a stopped hook process causes an error', () => {
     const {result, isStopped, stop} = HookProcess.start(jest.fn(), []);
 
     stop();
 
     expect(isStopped()).toBe(true);
 
-    expect(() => result.getCurrent()).toThrow(
+    expect(() => result.value).toThrow(
       new Error('The hook process has already stopped.')
     );
   });
 
-  test('calling result.getNextAsync() of a stopped hook process causes an error', () => {
+  test('calling result.next of a stopped hook process causes an error', () => {
     const {result, isStopped, stop} = HookProcess.start(jest.fn(), []);
 
     stop();
 
     expect(isStopped()).toBe(true);
 
-    expect(() => result.getNextAsync()).toThrow(
+    expect(() => result.next).toThrow(
       new Error('The hook process has already stopped.')
     );
   });
 
-  test('waiting for the next asynchronous result while the hook process is stopped causes an error', async () => {
+  test('stopping the hook process finally resolves result.next', async () => {
     const {result, stop} = HookProcess.start(jest.fn(), []);
-    const nextAsync = result.getNextAsync();
+    const {next} = result;
 
     stop();
 
-    await expect(nextAsync).rejects.toThrow(
-      new Error('The hook process has stopped.')
-    );
+    expect(await next).toEqual({done: true, value: undefined});
   });
 
   test('calling update() of a stopped hook process causes an error', () => {
@@ -240,7 +245,7 @@ describe('HookProcess', () => {
     );
   });
 
-  test('an asynchronous result promise is only resolved if its value differs', async () => {
+  test('result.next resolves only when there is a change in value', async () => {
     const {result} = HookProcess.start(() => {
       const [state, setState] = useState('a');
 
@@ -252,12 +257,12 @@ describe('HookProcess', () => {
       return state;
     }, []);
 
-    expect(result.getCurrent()).toBe('a');
-    await expect(result.getNextAsync()).resolves.toBe('b');
-    expect(result.getCurrent()).toBe('b');
+    expect(result.value).toBe('a');
+    expect(await result.next).toEqual({done: false, value: 'b'});
+    expect(result.value).toBe('b');
   });
 
-  test('an asynchronous result promise is created lazily', async () => {
+  test('result.next is created lazily', async () => {
     const {result} = HookProcess.start(() => {
       const [state, setState] = useState('a');
 
@@ -269,36 +274,71 @@ describe('HookProcess', () => {
       return state;
     }, []);
 
-    const nextAsync1 = result.getNextAsync();
-    const nextAsync2 = result.getNextAsync();
+    const {next: next1} = result;
+    const {next: next2} = result;
 
-    expect(result.getCurrent()).toBe('a');
-    await expect(nextAsync1).resolves.toBe('b');
-    await expect(nextAsync2).resolves.toBe('b');
+    expect(result.value).toBe('a');
+    expect(await next1).toEqual({done: false, value: 'b'});
+    expect(await next2).toEqual({done: false, value: 'b'});
 
-    const nextAsync3 = result.getNextAsync();
-    const nextAsync4 = result.getNextAsync();
+    const {next: next3} = result;
+    const {next: next4} = result;
 
-    expect(result.getCurrent()).toBe('b');
-    await expect(nextAsync3).resolves.toBe('c');
-    await expect(nextAsync4).resolves.toBe('c');
-    expect(result.getCurrent()).toBe('c');
+    expect(result.value).toBe('b');
+    expect(await next3).toEqual({done: false, value: 'c'});
+    expect(await next4).toEqual({done: false, value: 'c'});
+    expect(result.value).toBe('c');
 
-    expect(nextAsync1).toBe(nextAsync2);
-    expect(nextAsync2).not.toBe(nextAsync3);
-    expect(nextAsync3).toBe(nextAsync4);
+    expect(next1).toBe(next2);
+    expect(next2).not.toBe(next3);
+    expect(next3).toBe(next4);
   });
 
-  test('synchronous and asynchronous results are synchronized', async () => {
+  test('synchronous and asynchronous result values are always coherent', async () => {
     const {result, update} = HookProcess.start((arg: string) => arg, ['a']);
-    const nextAsync = result.getNextAsync();
+    const {next} = result;
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(update(['a'])).toBe('a');
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
+
+    next.then((iteratorResult) => {
+      expect(result.value).toBe('b');
+      expect(iteratorResult).toEqual({done: false, value: 'b'});
+      expect(true).toBe(true);
+    });
+
     expect(update(['b'])).toBe('b');
-    expect(result.getCurrent()).toBe('b');
-    await expect(nextAsync).resolves.toBe('b');
-    expect(result.getCurrent()).toBe('b');
+    expect(result.value).toBe('b');
+    expect(await next).toEqual({done: false, value: 'b'});
+    expect(result.value).toBe('b');
+
+    expect.assertions(10);
+  });
+
+  test('result is also an async iterator', async () => {
+    const hookProcess = HookProcess.start(() => {
+      const [state, setState] = useState(0);
+
+      useEffect(() => {
+        setTimeout(() => {
+          if (state < 2) {
+            setState((prevState) => prevState + 1);
+          } else {
+            hookProcess.stop();
+          }
+        }, 0);
+      }, [state]);
+
+      return state;
+    }, []);
+
+    const values = [hookProcess.result.value];
+
+    for await (const value of hookProcess.result) {
+      values.push(value);
+    }
+
+    expect(values).toEqual([0, 1, 2]);
   });
 });

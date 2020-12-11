@@ -27,10 +27,11 @@ npm install batis --save
 
 ## Rationale
 
-I am a frontend developer. One of the biggest problems in frontend development
-is managing state and deriving the UI from it as well as handling side effects
-that change the state. I mainly work with [React](https://reactjs.org) which
-allows me to solve the described problem via functional reactive programming.
+I am a front-end developer. One of the problems in front-end development is
+managing state and deriving the user interface from it, as well as handling side
+effects that change the state again. I mainly work with
+[React](https://reactjs.org) which allows me to solve the described problem via
+functional reactive programming.
 
 Reactive programming is generally understood to be programming using
 asynchronous data streams, which form the conceptual basis for libraries like
@@ -47,56 +48,59 @@ which in turn can lead to state changes (using the
 [`useState`](https://reactjs.org/docs/hooks-overview.html#state-hook) Hook) and
 thus to further renderings.
 
-In contrast to the concept of streams, the concept of Hooks was something I
-liked from the beginning. I find them very intuitive to read and write. I wanted
-to use this kind of reactive programming in other areas as well, for example for
-programming web workers, AWS Lambda handlers, or even JavaScript-controlled
-robots. Therefore I wrote _Batis_...
+Even though Hooks are actually a constrained solution for modeling states in
+actually stateless functional components, they have proven to be very elegant in
+their design. In my opinion, they are particularly suitable for modeling
+finite-state automata.
+
+_Note: I have another [side project](https://github.com/clebert/loxia) (WIP)
+where I am trying to shed more light on this design pattern._
+
+I wanted to use this kind of reactive programming in other areas as well, such
+as programming web workers or even JavaScript-controlled robots. Therefore I
+wrote _Batis_...
 
 ## Usage example
 
 ```js
-import {HookProcess, useEffect, useMemo, useState} from 'batis';
-```
+import {HookProcess, useEffect, useState} from 'batis';
 
-```js
 function useGreeting(salutation) {
   const [name, setName] = useState('John Doe');
 
   useEffect(() => {
-    setTimeout(() => {
-      setName('Jane Doe');
-    }, 1000);
+    setTimeout(() => setName('Jane Doe'), 500);
   }, []);
 
-  return useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
+  return `${salutation}, ${name}!`;
 }
-```
 
-```js
 const {result, update} = HookProcess.start(useGreeting, ['Hello']);
+
+console.log('Current:', result.value);
+
+(async () => {
+  for await (const value of result) {
+    console.log('Iterator:', value);
+  }
+})();
+
+console.log('Update:', update(['Welcome']));
 ```
 
-```js
-console.log(result.getCurrent()); // Hello, John Doe!
 ```
-
-```js
-console.log(update(['Welcome'])); // Welcome, John Doe!
-```
-
-```js
-result.getNextAsync().then(console.log); // Welcome, Jane Doe!
+Current: Hello, John Doe!
+Update: Welcome, John Doe!
+Iterator: Welcome, John Doe!
+Iterator: Welcome, Jane Doe!
 ```
 
 ### Testing React/Preact Hooks
 
-The API of _Batis_ is strongly influenced by
-[React Testing Library](https://github.com/testing-library/react-testing-library).
-I wanted to create a tool that was not only suitable for standalone use of Hooks
-but also for testing existing React/Preact Hooks. As long as the React/Preact
-Hooks to be tested use only the subset of the Hooks implemented by _Batis_, a
-test using [Jest](https://jestjs.io) can be set up as follows.
+I wanted to create a library that could be used not only for new standalone
+Hooks, but also for testing existing React/Preact Hooks. As long as the
+React/Preact Hooks to be tested use only the subset of the Hooks implemented by
+_Batis_, a test using [Jest](https://jestjs.io) can be set up as follows.
 
 Testing React Hooks:
 
@@ -170,9 +174,9 @@ type Hook = (...args: any[]) => any;
 ```
 
 ```ts
-interface Result<THook extends Hook> {
-  getCurrent(): ReturnType<THook>;
-  getNextAsync(): Promise<ReturnType<THook>>;
+interface Result<THook extends Hook> extends AsyncIterable<ReturnType<THook>> {
+  readonly value: ReturnType<THook>;
+  readonly next: Promise<IteratorResult<ReturnType<THook>, undefined>>;
 }
 ```
 

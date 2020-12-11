@@ -13,10 +13,11 @@ describe('useState()', () => {
 
     const {result, update} = HookProcess.start(hook, ['a']);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(update(['b'])).toBe('a');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -31,10 +32,11 @@ describe('useState()', () => {
 
     const {result, update} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(update([])).toBe('a');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
     expect(createInitialState).toBeCalledTimes(1);
   });
@@ -51,9 +53,10 @@ describe('useState()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('c');
+    expect(result.value).toBe('c');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -73,11 +76,12 @@ describe('useState()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(hook).toBeCalledTimes(1);
-    await expect(result.getNextAsync()).resolves.toBe('c');
+    expect(await result.next).toEqual({done: false, value: 'c'});
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -93,9 +97,10 @@ describe('useState()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -115,11 +120,12 @@ describe('useState()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(hook).toBeCalledTimes(1);
 
     await queueMacrotasks(10);
-    expect(result.getCurrent()).toBe('a');
+
+    expect(result.value).toBe('a');
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -137,9 +143,10 @@ describe('useState()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('abc');
+    expect(result.value).toBe('abc');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -154,9 +161,10 @@ describe('useState()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -170,6 +178,7 @@ describe('useState()', () => {
     expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -185,6 +194,7 @@ describe('useState()', () => {
     expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -203,12 +213,13 @@ describe('useState()', () => {
 
     const {result, isStopped, update} = HookProcess.start(hook, ['a']);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(isStopped()).toBe(false);
     expect(() => update(['b'])).toThrow(new Error('oops'));
     expect(isStopped()).toBe(true);
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 
@@ -229,12 +240,13 @@ describe('useState()', () => {
 
     const {result, isStopped} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('a');
+    expect(result.value).toBe('a');
     expect(isStopped()).toBe(false);
-    await expect(result.getNextAsync()).rejects.toEqual(new Error('oops'));
+    await expect(result.next).rejects.toEqual(new Error('oops'));
     expect(isStopped()).toBe(true);
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -263,9 +275,10 @@ describe('useState()', () => {
 
     const {result} = HookProcess.start(hook, []);
 
-    expect(result.getCurrent()).toBe('abcde');
+    expect(result.value).toBe('abcde');
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(4);
   });
 
@@ -289,9 +302,10 @@ describe('useState()', () => {
     initialSetState!((previousState) => previousState + 'b');
     initialSetState!((previousState) => previousState + 'c');
 
-    await expect(result.getNextAsync()).resolves.toBe('abc');
+    expect(await result.next).toEqual({done: false, value: 'abc'});
 
     await queueMacrotasks(10);
+
     expect(hook).toBeCalledTimes(2);
   });
 });
