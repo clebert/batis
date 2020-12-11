@@ -1,6 +1,6 @@
 {
   "name": "batis",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "description": "A JavaScript library for reactive programming using React-like Hooks.",
   "bugs": {
     "url": "https://github.com/clebert/batis/issues"
