@@ -1,6 +1,6 @@
 // tslint:disable: no-floating-promises
 
-import {HookProcess, SetState, useEffect, useState} from '..';
+import {HookService, SetState, useEffect, useState} from '..';
 import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useState()', () => {
@@ -11,10 +11,10 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result, update} = HookProcess.start(hook, ['a']);
+    const service = HookService.start(hook, ['a']);
 
-    expect(result.value).toBe('a');
-    expect(update(['b'])).toBe('a');
+    expect(service.result.value).toBe('a');
+    expect(service.update(['b'])).toBe('a');
 
     await queueMacrotasks(10);
 
@@ -30,10 +30,10 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result, update} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('a');
-    expect(update([])).toBe('a');
+    expect(service.result.value).toBe('a');
+    expect(service.update([])).toBe('a');
 
     await queueMacrotasks(10);
 
@@ -51,9 +51,9 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('c');
+    expect(service.result.value).toBe('c');
 
     await queueMacrotasks(10);
 
@@ -74,11 +74,11 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('a');
+    expect(service.result.value).toBe('a');
     expect(hook).toBeCalledTimes(1);
-    expect(await result.next).toEqual({done: false, value: 'c'});
+    expect(await service.result.next).toEqual({done: false, value: 'c'});
 
     await queueMacrotasks(10);
 
@@ -95,9 +95,9 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('a');
+    expect(service.result.value).toBe('a');
 
     await queueMacrotasks(10);
 
@@ -118,14 +118,14 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('a');
+    expect(service.result.value).toBe('a');
     expect(hook).toBeCalledTimes(1);
 
     await queueMacrotasks(10);
 
-    expect(result.value).toBe('a');
+    expect(service.result.value).toBe('a');
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -141,9 +141,9 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('abc');
+    expect(service.result.value).toBe('abc');
 
     await queueMacrotasks(10);
 
@@ -159,30 +159,30 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('a');
+    expect(service.result.value).toBe('a');
 
     await queueMacrotasks(10);
 
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('an error caused by a state initialization prevents the hook process from being started', async () => {
+  test('an error caused by a state initialization prevents the hook service from being started', async () => {
     const hook = jest.fn(() => {
       useState(() => {
         throw new Error('oops');
       });
     });
 
-    expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
+    expect(() => HookService.start(hook, [])).toThrow(new Error('oops'));
 
     await queueMacrotasks(10);
 
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('an error caused by a state change prevents the hook process from being started', async () => {
+  test('an error caused by a state change prevents the hook service from being started', async () => {
     const hook = jest.fn(() => {
       const [, setState] = useState('a');
 
@@ -191,14 +191,14 @@ describe('useState()', () => {
       });
     });
 
-    expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
+    expect(() => HookService.start(hook, [])).toThrow(new Error('oops'));
 
     await queueMacrotasks(10);
 
     expect(hook).toBeCalledTimes(1);
   });
 
-  test('an error caused by a state change triggered by an update stops the hook process', async () => {
+  test('an error caused by a state change triggered by an update stops the hook service', async () => {
     const hook = jest.fn((arg) => {
       const [state, setState] = useState(arg);
 
@@ -211,19 +211,19 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result, isStopped, update} = HookProcess.start(hook, ['a']);
+    const service = HookService.start(hook, ['a']);
 
-    expect(result.value).toBe('a');
-    expect(isStopped()).toBe(false);
-    expect(() => update(['b'])).toThrow(new Error('oops'));
-    expect(isStopped()).toBe(true);
+    expect(service.result.value).toBe('a');
+    expect(service.stopped).toBe(false);
+    expect(() => service.update(['b'])).toThrow(new Error('oops'));
+    expect(service.stopped).toBe(true);
 
     await queueMacrotasks(10);
 
     expect(hook).toBeCalledTimes(2);
   });
 
-  test('an error caused by a state change triggered by an asynchronous effect stops the hook process', async () => {
+  test('an error caused by a state change triggered by an asynchronous effect stops the hook service', async () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
 
@@ -238,12 +238,12 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result, isStopped} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('a');
-    expect(isStopped()).toBe(false);
-    await expect(result.next).rejects.toEqual(new Error('oops'));
-    expect(isStopped()).toBe(true);
+    expect(service.result.value).toBe('a');
+    expect(service.stopped).toBe(false);
+    await expect(service.result.next).rejects.toEqual(new Error('oops'));
+    expect(service.stopped).toBe(true);
 
     await queueMacrotasks(10);
 
@@ -273,9 +273,9 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('abcde');
+    expect(service.result.value).toBe('abcde');
 
     await queueMacrotasks(10);
 
@@ -297,12 +297,12 @@ describe('useState()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
     initialSetState!((previousState) => previousState + 'b');
     initialSetState!((previousState) => previousState + 'c');
 
-    expect(await result.next).toEqual({done: false, value: 'abc'});
+    expect(await service.result.next).toEqual({done: false, value: 'abc'});
 
     await queueMacrotasks(10);
 

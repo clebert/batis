@@ -1,8 +1,8 @@
-import {HookProcess} from '../hook-process';
+import {HookService} from '../hook-service';
 
 export function useMemo<TValue>(
   createValue: () => TValue,
   dependencies: readonly unknown[]
 ): TValue {
-  return HookProcess.getActive().registerMemoHook(createValue, dependencies);
+  return HookService.active.useMemo(createValue, dependencies);
 }

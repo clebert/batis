@@ -1,6 +1,6 @@
 // tslint:disable: no-floating-promises
 
-import {HookProcess, useEffect, useState} from '..';
+import {HookService, useEffect, useState} from '..';
 import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useEffect()', () => {
@@ -15,35 +15,35 @@ describe('useEffect()', () => {
       useEffect(effectWithDependencies, [arg1, arg2]);
     });
 
-    const {update} = HookProcess.start(hook, ['a', 'x']);
+    const service = HookService.start(hook, ['a', 'x']);
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(effectWithoutDependencies).toHaveBeenCalledTimes(1);
     expect(effectWithEmptyDependencies).toHaveBeenCalledTimes(1);
     expect(effectWithDependencies).toHaveBeenCalledTimes(1);
 
-    update(['a', 'x']);
+    service.update(['a', 'x']);
 
     expect(hook).toHaveBeenCalledTimes(2);
     expect(effectWithoutDependencies).toHaveBeenCalledTimes(2);
     expect(effectWithEmptyDependencies).toHaveBeenCalledTimes(1);
     expect(effectWithDependencies).toHaveBeenCalledTimes(1);
 
-    update(['a', 'y']);
+    service.update(['a', 'y']);
 
     expect(hook).toHaveBeenCalledTimes(3);
     expect(effectWithoutDependencies).toHaveBeenCalledTimes(3);
     expect(effectWithEmptyDependencies).toHaveBeenCalledTimes(1);
     expect(effectWithDependencies).toHaveBeenCalledTimes(2);
 
-    update(['b', 'y']);
+    service.update(['b', 'y']);
 
     expect(hook).toHaveBeenCalledTimes(4);
     expect(effectWithoutDependencies).toHaveBeenCalledTimes(4);
     expect(effectWithEmptyDependencies).toHaveBeenCalledTimes(1);
     expect(effectWithDependencies).toHaveBeenCalledTimes(3);
 
-    update(['b', 'y']);
+    service.update(['b', 'y']);
 
     await queueMacrotasks(10);
 
@@ -65,7 +65,7 @@ describe('useEffect()', () => {
       useEffect(effect2, []);
     });
 
-    const {update} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect1).toHaveBeenCalledTimes(0);
@@ -73,7 +73,7 @@ describe('useEffect()', () => {
     expect(cleanUpEffect2).toHaveBeenCalledTimes(0);
     expect(effect2).toHaveBeenCalledTimes(1);
 
-    update([]);
+    service.update([]);
 
     await queueMacrotasks(10);
 
@@ -84,7 +84,7 @@ describe('useEffect()', () => {
     expect(effect2).toHaveBeenCalledTimes(1);
   });
 
-  test('an effect is cleaned up once as a result of stopping the hook process', async () => {
+  test('an effect is cleaned up once as a result of stopping the hook service', async () => {
     const cleanUpEffect = jest.fn();
     const effect = jest.fn(() => cleanUpEffect);
 
@@ -92,14 +92,14 @@ describe('useEffect()', () => {
       useEffect(effect, []);
     });
 
-    const {stop} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(0);
     expect(effect).toHaveBeenCalledTimes(1);
 
-    stop();
-    stop();
+    service.stop();
+    service.stop();
 
     await queueMacrotasks(10);
 
@@ -123,7 +123,7 @@ describe('useEffect()', () => {
       }, []);
     });
 
-    expect(() => HookProcess.start(hook, [])).toThrow(new Error('oops'));
+    expect(() => HookService.start(hook, [])).toThrow(new Error('oops'));
 
     await queueMacrotasks(10);
 
@@ -148,11 +148,11 @@ describe('useEffect()', () => {
       }, []);
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect).toHaveBeenCalledTimes(0);
-    await expect(result.next).rejects.toEqual(new Error('oops'));
+    await expect(service.result.next).rejects.toEqual(new Error('oops'));
 
     await queueMacrotasks(10);
 
@@ -176,7 +176,7 @@ describe('useEffect()', () => {
     });
 
     const consoleError = jest.spyOn(console, 'error');
-    const {stop} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(cleanUpEffect1).toHaveBeenCalledTimes(0);
@@ -184,7 +184,7 @@ describe('useEffect()', () => {
     expect(cleanUpEffect3).toHaveBeenCalledTimes(0);
     expect(consoleError).toHaveBeenCalledTimes(0);
 
-    stop();
+    service.stop();
 
     await queueMacrotasks(10);
 

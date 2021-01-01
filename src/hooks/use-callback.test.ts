@@ -1,4 +1,4 @@
-import {HookProcess, useCallback} from '..';
+import {HookService, useCallback} from '..';
 import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useCallback()', () => {
@@ -20,7 +20,7 @@ describe('useCallback()', () => {
 
     const callbackA = jest.fn();
     const callbackB = jest.fn();
-    const {update} = HookProcess.start(hook, [callbackA, callbackB, 'a', 'x']);
+    const service = HookService.start(hook, [callbackA, callbackB, 'a', 'x']);
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(memoizedCallback1).toBe(callbackA);
@@ -29,7 +29,7 @@ describe('useCallback()', () => {
     const callbackC = jest.fn();
     const callbackD = jest.fn();
 
-    update([callbackC, callbackD, 'a', 'x']);
+    service.update([callbackC, callbackD, 'a', 'x']);
 
     expect(hook).toHaveBeenCalledTimes(2);
     expect(memoizedCallback1).toBe(callbackA);
@@ -38,7 +38,7 @@ describe('useCallback()', () => {
     const callbackE = jest.fn();
     const callbackF = jest.fn();
 
-    update([callbackE, callbackF, 'a', 'y']);
+    service.update([callbackE, callbackF, 'a', 'y']);
 
     expect(hook).toHaveBeenCalledTimes(3);
     expect(memoizedCallback1).toBe(callbackA);
@@ -47,7 +47,7 @@ describe('useCallback()', () => {
     const callbackG = jest.fn();
     const callbackH = jest.fn();
 
-    update([callbackG, callbackH, 'b', 'y']);
+    service.update([callbackG, callbackH, 'b', 'y']);
 
     expect(hook).toHaveBeenCalledTimes(4);
     expect(memoizedCallback1).toBe(callbackA);
@@ -56,7 +56,7 @@ describe('useCallback()', () => {
     const callbackI = jest.fn();
     const callbackJ = jest.fn();
 
-    update([callbackI, callbackJ, 'b', 'y']);
+    service.update([callbackI, callbackJ, 'b', 'y']);
 
     expect(hook).toHaveBeenCalledTimes(5);
     expect(memoizedCallback1).toBe(callbackA);

@@ -1,9 +1,9 @@
 // tslint:disable: no-floating-promises
 
-import {HookProcess, useEffect, useRef, useState} from '.';
+import {HookService, useEffect, useRef, useState} from '.';
 import {queueMacrotasks} from './internals/queue-macrotasks';
 
-describe('HookProcess', () => {
+describe('HookService', () => {
   test('making fewer hook calls causes an error', async () => {
     const hook = jest.fn(() => {
       const [firstTime, setFirstTime] = useState(false);
@@ -20,7 +20,7 @@ describe('HookProcess', () => {
       }
     });
 
-    expect(() => HookProcess.start(hook, [])).toThrow(
+    expect(() => HookService.start(hook, [])).toThrow(
       new Error('The number of hook calls must not change.')
     );
 
@@ -45,7 +45,7 @@ describe('HookProcess', () => {
       }
     });
 
-    expect(() => HookProcess.start(hook, [])).toThrow(
+    expect(() => HookService.start(hook, [])).toThrow(
       new Error('The number of hook calls must not change.')
     );
 
@@ -71,7 +71,7 @@ describe('HookProcess', () => {
       }
     });
 
-    expect(() => HookProcess.start(hook, [])).toThrow(
+    expect(() => HookService.start(hook, [])).toThrow(
       new Error('The order of hook calls must not change.')
     );
 
@@ -95,7 +95,7 @@ describe('HookProcess', () => {
       }
     });
 
-    expect(() => HookProcess.start(hook1, [])).toThrow(
+    expect(() => HookService.start(hook1, [])).toThrow(
       new Error('The existence of hook dependencies must not change.')
     );
 
@@ -117,7 +117,7 @@ describe('HookProcess', () => {
       }
     });
 
-    expect(() => HookProcess.start(hook2, [])).toThrow(
+    expect(() => HookService.start(hook2, [])).toThrow(
       new Error('The existence of hook dependencies must not change.')
     );
 
@@ -141,7 +141,7 @@ describe('HookProcess', () => {
       }
     });
 
-    expect(() => HookProcess.start(hook1, [])).toThrow(
+    expect(() => HookService.start(hook1, [])).toThrow(
       new Error('The order and number of hook dependencies must not change.')
     );
 
@@ -163,7 +163,7 @@ describe('HookProcess', () => {
       }
     });
 
-    expect(() => HookProcess.start(hook2, [])).toThrow(
+    expect(() => HookService.start(hook2, [])).toThrow(
       new Error('The order and number of hook dependencies must not change.')
     );
 
@@ -172,81 +172,77 @@ describe('HookProcess', () => {
     expect(hook2).toHaveBeenCalledTimes(2);
   });
 
-  test('calling a hook outside the body of an active hook causes an error', () => {
+  test('invoking a hook outside of an active hook service causes an error', () => {
     expect(() => useRef('a')).toThrow(
-      new Error('Hooks can only be called inside the body of an active hook.')
+      new Error('Hooks can only be invoked within an active hook service.')
     );
   });
 
-  test('calling result.value of a stopped hook process causes an error', () => {
-    const {result, isStopped, stop} = HookProcess.start(jest.fn(), []);
+  test('accessing result.value of a stopped hook service causes an error', () => {
+    const service = HookService.start(jest.fn(), []);
 
-    stop();
+    service.stop();
 
-    expect(isStopped()).toBe(true);
+    expect(service.stopped).toBe(true);
 
-    expect(() => result.value).toThrow(
-      new Error('The hook process has already stopped.')
+    expect(() => service.result.value).toThrow(
+      new Error('The hook service has already stopped.')
     );
   });
 
-  test('calling result.next of a stopped hook process causes an error', () => {
-    const {result, isStopped, stop} = HookProcess.start(jest.fn(), []);
+  test('accessing result.next of a stopped hook service causes an error', () => {
+    const service = HookService.start(jest.fn(), []);
 
-    stop();
+    service.stop();
 
-    expect(isStopped()).toBe(true);
+    expect(service.stopped).toBe(true);
 
-    expect(() => result.next).toThrow(
-      new Error('The hook process has already stopped.')
+    expect(() => service.result.next).toThrow(
+      new Error('The hook service has already stopped.')
     );
   });
 
-  test('stopping the hook process finally resolves result.next', async () => {
-    const {result, stop} = HookProcess.start(jest.fn(), []);
-    const {next} = result;
+  test('stopping the hook service finally resolves result.next', async () => {
+    const service = HookService.start(jest.fn(), []);
+    const {next} = service.result;
 
-    stop();
+    service.stop();
 
     expect(await next).toEqual({done: true, value: undefined});
   });
 
-  test('calling update() of a stopped hook process causes an error', () => {
-    const {isStopped, stop, update} = HookProcess.start(jest.fn(), []);
+  test('updating a stopped hook service causes an error', () => {
+    const service = HookService.start(jest.fn(), []);
 
-    stop();
+    service.stop();
 
-    expect(isStopped()).toBe(true);
+    expect(service.stopped).toBe(true);
 
-    expect(() => update([])).toThrow(
+    expect(() => service.update([])).toThrow(
       new Error(
-        'The hook process has already stopped and can therefore no longer be updated.'
+        'The hook service has already stopped and can therefore no longer be updated.'
       )
     );
   });
 
-  test('registering a hook on a non-active hook process causes an error', () => {
-    const {
-      registerEffectHook,
-      registerMemoHook,
-      registerStateHook,
-    } = HookProcess.start(jest.fn(), []);
+  test('registering a hook on a non-active hook service causes an error', () => {
+    const service = HookService.start(jest.fn(), []);
 
-    expect(() => registerEffectHook(jest.fn())).toThrow(
+    expect(() => service.useEffect(jest.fn())).toThrow(
       new Error('Please use the separately exported useEffect() function.')
     );
 
-    expect(() => registerMemoHook(jest.fn(), [])).toThrow(
+    expect(() => service.useMemo(jest.fn(), [])).toThrow(
       new Error('Please use the separately exported useMemo() function.')
     );
 
-    expect(() => registerStateHook(jest.fn())).toThrow(
+    expect(() => service.useState(jest.fn())).toThrow(
       new Error('Please use the separately exported useState() function.')
     );
   });
 
   test('result.next resolves only when there is a change in value', async () => {
-    const {result} = HookProcess.start(() => {
+    const service = HookService.start(() => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
@@ -257,13 +253,13 @@ describe('HookProcess', () => {
       return state;
     }, []);
 
-    expect(result.value).toBe('a');
-    expect(await result.next).toEqual({done: false, value: 'b'});
-    expect(result.value).toBe('b');
+    expect(service.result.value).toBe('a');
+    expect(await service.result.next).toEqual({done: false, value: 'b'});
+    expect(service.result.value).toBe('b');
   });
 
   test('result.next is created lazily', async () => {
-    const {result} = HookProcess.start(() => {
+    const service = HookService.start(() => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
@@ -274,20 +270,20 @@ describe('HookProcess', () => {
       return state;
     }, []);
 
-    const {next: next1} = result;
-    const {next: next2} = result;
+    const {next: next1} = service.result;
+    const {next: next2} = service.result;
 
-    expect(result.value).toBe('a');
+    expect(service.result.value).toBe('a');
     expect(await next1).toEqual({done: false, value: 'b'});
     expect(await next2).toEqual({done: false, value: 'b'});
 
-    const {next: next3} = result;
-    const {next: next4} = result;
+    const {next: next3} = service.result;
+    const {next: next4} = service.result;
 
-    expect(result.value).toBe('b');
+    expect(service.result.value).toBe('b');
     expect(await next3).toEqual({done: false, value: 'c'});
     expect(await next4).toEqual({done: false, value: 'c'});
-    expect(result.value).toBe('c');
+    expect(service.result.value).toBe('c');
 
     expect(next1).toBe(next2);
     expect(next2).not.toBe(next3);
@@ -295,29 +291,29 @@ describe('HookProcess', () => {
   });
 
   test('synchronous and asynchronous result values are always coherent', async () => {
-    const {result, update} = HookProcess.start((arg: string) => arg, ['a']);
-    const {next} = result;
+    const service = HookService.start((arg: string) => arg, ['a']);
+    const {next} = service.result;
 
-    expect(result.value).toBe('a');
-    expect(update(['a'])).toBe('a');
-    expect(result.value).toBe('a');
+    expect(service.result.value).toBe('a');
+    expect(service.update(['a'])).toBe('a');
+    expect(service.result.value).toBe('a');
 
     next.then((iteratorResult) => {
-      expect(result.value).toBe('b');
+      expect(service.result.value).toBe('b');
       expect(iteratorResult).toEqual({done: false, value: 'b'});
       expect(true).toBe(true);
     });
 
-    expect(update(['b'])).toBe('b');
-    expect(result.value).toBe('b');
+    expect(service.update(['b'])).toBe('b');
+    expect(service.result.value).toBe('b');
     expect(await next).toEqual({done: false, value: 'b'});
-    expect(result.value).toBe('b');
+    expect(service.result.value).toBe('b');
 
     expect.assertions(10);
   });
 
   test('result is also an async iterator', async () => {
-    const hookProcess = HookProcess.start(() => {
+    const service = HookService.start(() => {
       const [state, setState] = useState(0);
 
       useEffect(() => {
@@ -325,7 +321,7 @@ describe('HookProcess', () => {
           if (state < 2) {
             setState((prevState) => prevState + 1);
           } else {
-            hookProcess.stop();
+            service.stop();
           }
         }, 0);
       }, [state]);
@@ -333,9 +329,9 @@ describe('HookProcess', () => {
       return state;
     }, []);
 
-    const values = [hookProcess.result.value];
+    const values = [service.result.value];
 
-    for await (const value of hookProcess.result) {
+    for await (const value of service.result) {
       values.push(value);
     }
 

@@ -1,4 +1,4 @@
-import {HookProcess, useMemo} from '..';
+import {HookService, useMemo} from '..';
 import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useMemo()', () => {
@@ -11,31 +11,31 @@ describe('useMemo()', () => {
       useMemo(createValue2, [arg1, arg2]);
     });
 
-    const {update} = HookProcess.start(hook, ['a', 'x']);
+    const service = HookService.start(hook, ['a', 'x']);
 
     expect(hook).toHaveBeenCalledTimes(1);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(1);
 
-    update(['a', 'x']);
+    service.update(['a', 'x']);
 
     expect(hook).toHaveBeenCalledTimes(2);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(1);
 
-    update(['a', 'y']);
+    service.update(['a', 'y']);
 
     expect(hook).toHaveBeenCalledTimes(3);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(2);
 
-    update(['b', 'y']);
+    service.update(['b', 'y']);
 
     expect(hook).toHaveBeenCalledTimes(4);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(3);
 
-    update(['b', 'y']);
+    service.update(['b', 'y']);
 
     await queueMacrotasks(10);
 

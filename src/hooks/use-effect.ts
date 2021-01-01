@@ -1,5 +1,5 @@
-import {Effect, HookProcess} from '../hook-process';
+import {Effect, HookService} from '../hook-service';
 
 export function useEffect(effect: Effect, dependencies?: unknown[]): void {
-  HookProcess.getActive().registerEffectHook(effect, dependencies);
+  HookService.active.useEffect(effect, dependencies);
 }

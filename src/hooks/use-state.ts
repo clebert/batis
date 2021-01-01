@@ -1,7 +1,7 @@
-import {CreateInitialState, HookProcess, SetState} from '../hook-process';
+import {CreateInitialState, HookService, SetState} from '../hook-service';
 
 export function useState<TState>(
   initialState: TState | CreateInitialState<TState>
 ): [TState, SetState<TState>] {
-  return HookProcess.getActive().registerStateHook(initialState);
+  return HookService.active.useState(initialState);
 }

@@ -1,6 +1,6 @@
 // tslint:disable: no-floating-promises
 
-import {HookProcess, useEffect, useRef, useState} from '..';
+import {HookService, useEffect, useRef, useState} from '..';
 import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useRef()', () => {
@@ -16,15 +16,15 @@ describe('useRef()', () => {
       return ref1.current + ref2.current;
     });
 
-    const {result, update} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('ax');
+    expect(service.result.value).toBe('ax');
     expect(hook).toBeCalledTimes(1);
-    expect(update([])).toBe('ay');
+    expect(service.update([])).toBe('ay');
     expect(hook).toBeCalledTimes(2);
-    expect(update([])).toBe('ay');
+    expect(service.update([])).toBe('ay');
     expect(hook).toBeCalledTimes(3);
-    expect(update([])).toBe('ay');
+    expect(service.update([])).toBe('ay');
 
     await queueMacrotasks(10);
 
@@ -44,10 +44,10 @@ describe('useRef()', () => {
       return state + ref.current;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('ax');
-    expect(await result.next).toEqual({done: false, value: 'by'});
+    expect(service.result.value).toBe('ax');
+    expect(await service.result.next).toEqual({done: false, value: 'by'});
 
     await queueMacrotasks(10);
 

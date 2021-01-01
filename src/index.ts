@@ -1,2 +1,2 @@
 export * from './hooks';
-export * from './hook-process';
+export * from './hook-service';

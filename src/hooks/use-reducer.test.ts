@@ -1,4 +1,4 @@
-import {Dispatch, HookProcess, useReducer} from '..';
+import {Dispatch, HookService, useReducer} from '..';
 import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useReducer()', () => {
@@ -9,10 +9,10 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const {result, update} = HookProcess.start(hook, ['a']);
+    const service = HookService.start(hook, ['a']);
 
-    expect(result.value).toBe('a');
-    expect(update(['b'])).toBe('a');
+    expect(service.result.value).toBe('a');
+    expect(service.update(['b'])).toBe('a');
 
     await queueMacrotasks(10);
 
@@ -28,11 +28,11 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const {result, update} = HookProcess.start(hook, ['a']);
+    const service = HookService.start(hook, ['a']);
 
-    expect(result.value).toBe('a');
-    expect(update(['a'])).toBe('a');
-    expect(update(['b'])).toBe('a');
+    expect(service.result.value).toBe('a');
+    expect(service.update(['a'])).toBe('a');
+    expect(service.update(['b'])).toBe('a');
 
     await queueMacrotasks(10);
 
@@ -55,9 +55,9 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('abc');
+    expect(service.result.value).toBe('abc');
 
     await queueMacrotasks(10);
 
@@ -76,9 +76,9 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
-    expect(result.value).toBe('a');
+    expect(service.result.value).toBe('a');
 
     await queueMacrotasks(10);
 
@@ -103,12 +103,12 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const {result} = HookProcess.start(hook, []);
+    const service = HookService.start(hook, []);
 
     initialDispatch!('b');
     initialDispatch!('c');
 
-    expect(await result.next).toEqual({done: false, value: 'abc'});
+    expect(await service.result.next).toEqual({done: false, value: 'abc'});
 
     await queueMacrotasks(10);
 

@@ -17,7 +17,7 @@ export {Effect, CleanUpEffect, CreateState, SetState};
 
 export type Hook = (...args: any[]) => any;
 
-export interface Result<THook extends Hook>
+export interface HookResult<THook extends Hook>
   extends AsyncIterable<ReturnType<THook>> {
   readonly value: ReturnType<THook>;
   readonly next: Promise<IteratorResult<ReturnType<THook>, undefined>>;
@@ -25,13 +25,13 @@ export interface Result<THook extends Hook>
 
 export type CreateInitialState<TState> = () => TState;
 
-let active: HookProcess | undefined;
+let active: HookService | undefined;
 
-export class HookProcess<THook extends Hook = Hook> {
-  static getActive(): HookProcess {
+export class HookService<THook extends Hook = Hook> {
+  static get active(): HookService {
     if (!active) {
       throw new Error(
-        'Hooks can only be called inside the body of an active hook.'
+        'Hooks can only be invoked within an active hook service.'
       );
     }
 
@@ -41,8 +41,8 @@ export class HookProcess<THook extends Hook = Hook> {
   static start<THook extends Hook>(
     hook: THook,
     args: Parameters<THook>
-  ): HookProcess<THook> {
-    return new HookProcess<THook>(hook, args);
+  ): HookService<THook> {
+    return new HookService<THook>(hook, args);
   }
 
   readonly #memory: Memory = new Memory();
@@ -59,10 +59,10 @@ export class HookProcess<THook extends Hook = Hook> {
     this.#value = this.update(args);
   }
 
-  get result(): Result<THook> {
+  get result(): HookResult<THook> {
     const getValue = () => {
       if (this.#stopped) {
-        throw new Error('The hook process has already stopped.');
+        throw new Error('The hook service has already stopped.');
       }
 
       return this.#value;
@@ -81,7 +81,7 @@ export class HookProcess<THook extends Hook = Hook> {
         return {
           next: () => {
             if (this.#stopped) {
-              throw new Error('The hook process has already stopped.');
+              throw new Error('The hook service has already stopped.');
             }
 
             if (this.#iteratorResult === undefined) {
@@ -95,30 +95,30 @@ export class HookProcess<THook extends Hook = Hook> {
     };
   }
 
-  readonly isStopped = (): boolean => {
+  get stopped(): boolean {
     return this.#stopped;
-  };
+  }
 
-  readonly stop = (): void => {
+  stop(): void {
     if (!this.#stopped) {
       this.#stopped = true;
 
-      this.#cleanUpEffects(true);
+      this.cleanUpEffects(true);
       this.#iteratorResult?.resolve({done: true, value: undefined});
     }
-  };
+  }
 
-  readonly update = (args: Parameters<THook>): ReturnType<THook> => {
+  update(args: Parameters<THook>): ReturnType<THook> {
     if (this.#stopped) {
       throw new Error(
-        'The hook process has already stopped and can therefore no longer be updated.'
+        'The hook service has already stopped and can therefore no longer be updated.'
       );
     }
 
     try {
       if (
         !this.#memory.isAllocated() ||
-        this.#applyStateChanges() ||
+        this.applyStateChanges() ||
         !Object.is(this.#args, args)
       ) {
         this.#args = args;
@@ -126,15 +126,15 @@ export class HookProcess<THook extends Hook = Hook> {
         let value: ReturnType<THook>;
 
         do {
-          value = this.#execute(args);
+          value = this.invoke(args);
 
-          while (this.#applyStateChanges()) {
-            value = this.#execute(args);
+          while (this.applyStateChanges()) {
+            value = this.invoke(args);
           }
 
-          this.#cleanUpEffects();
-          this.#triggerEffects();
-        } while (this.#applyStateChanges());
+          this.cleanUpEffects();
+          this.triggerEffects();
+        } while (this.applyStateChanges());
 
         if (!Object.is(value, this.#value)) {
           this.#value = value;
@@ -148,19 +148,16 @@ export class HookProcess<THook extends Hook = Hook> {
     } catch (error) {
       this.#stopped = true;
 
-      this.#cleanUpEffects(true);
+      this.cleanUpEffects(true);
       this.#iteratorResult?.reject(error);
 
       throw error;
     }
 
     return this.#value;
-  };
+  }
 
-  readonly registerEffectHook = (
-    effect: Effect,
-    dependencies?: unknown[]
-  ): void => {
+  useEffect(effect: Effect, dependencies?: unknown[]): void {
     if (this !== active) {
       throw new Error(
         'Please use the separately exported useEffect() function.'
@@ -188,11 +185,11 @@ export class HookProcess<THook extends Hook = Hook> {
     }
 
     this.#memory.next();
-  };
+  }
 
-  readonly registerStateHook = <TState>(
+  useState<TState>(
     initialState: TState | CreateInitialState<TState>
-  ): [TState, SetState<TState>] => {
+  ): [TState, SetState<TState>] {
     if (this !== active) {
       throw new Error(
         'Please use the separately exported useState() function.'
@@ -223,12 +220,12 @@ export class HookProcess<THook extends Hook = Hook> {
     this.#memory.next();
 
     return [memoryCell.state, memoryCell.setState];
-  };
+  }
 
-  readonly registerMemoHook = <TValue>(
+  useMemo<TValue>(
     createValue: () => TValue,
     dependencies: readonly unknown[]
-  ): TValue => {
+  ): TValue {
     if (this !== active) {
       throw new Error('Please use the separately exported useMemo() function.');
     }
@@ -251,9 +248,9 @@ export class HookProcess<THook extends Hook = Hook> {
     this.#memory.next();
 
     return memoryCell.value;
-  };
+  }
 
-  readonly #execute = (args: Parameters<THook>): ReturnType<THook> => {
+  private invoke(args: Parameters<THook>): ReturnType<THook> {
     active = this;
 
     try {
@@ -265,9 +262,9 @@ export class HookProcess<THook extends Hook = Hook> {
     } finally {
       active = undefined;
     }
-  };
+  }
 
-  readonly #applyStateChanges = (): boolean => {
+  private applyStateChanges(): boolean {
     let changed = false;
 
     for (const memoryCell of this.#memory.memoryCells) {
@@ -289,9 +286,9 @@ export class HookProcess<THook extends Hook = Hook> {
     }
 
     return changed;
-  };
+  }
 
-  readonly #cleanUpEffects = (force = false): void => {
+  private cleanUpEffects(force: boolean = false): void {
     for (const memoryCell of this.#memory.memoryCells) {
       if (isKindOf<EffectMemoryCell>('EffectMemoryCell', memoryCell)) {
         if ((memoryCell.outdated || force) && memoryCell.cleanUpEffect) {
@@ -305,9 +302,9 @@ export class HookProcess<THook extends Hook = Hook> {
         }
       }
     }
-  };
+  }
 
-  readonly #triggerEffects = (): void => {
+  private triggerEffects(): void {
     for (const memoryCell of this.#memory.memoryCells) {
       if (isKindOf<EffectMemoryCell>('EffectMemoryCell', memoryCell)) {
         if (memoryCell.outdated) {
@@ -316,5 +313,5 @@ export class HookProcess<THook extends Hook = Hook> {
         }
       }
     }
-  };
+  }
 }

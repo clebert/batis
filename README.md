@@ -63,7 +63,7 @@ wrote _Batis_...
 ## Usage example
 
 ```js
-import {HookProcess, useEffect, useState} from 'batis';
+import {HookService, useEffect, useState} from 'batis';
 
 function useGreeting(salutation) {
   const [name, setName] = useState('John Doe');
@@ -75,17 +75,17 @@ function useGreeting(salutation) {
   return `${salutation}, ${name}!`;
 }
 
-const {result, update} = HookProcess.start(useGreeting, ['Hello']);
+const greeting = HookService.start(useGreeting, ['Hello']);
 
-console.log('Current:', result.value);
+console.log('Current:', greeting.result.value);
 
 (async () => {
-  for await (const value of result) {
+  for await (const value of greeting.result) {
     console.log('Iterator:', value);
   }
 })();
 
-console.log('Update:', update(['Welcome']));
+console.log('Update:', greeting.update(['Welcome']));
 ```
 
 ```
@@ -155,17 +155,17 @@ Hooks:
 ### Type definitions
 
 ```ts
-class HookProcess<THook extends Hook> {
+class HookService<THook extends Hook = Hook> {
   static start<THook extends Hook>(
     hook: THook,
     args: Parameters<THook>
-  ): HookProcess<THook>;
+  ): HookService<THook>;
 
-  get result(): Result<THook>;
+  get result(): HookResult<THook>;
+  get stopped(): boolean;
 
-  readonly isStopped: () => boolean;
-  readonly stop: () => void;
-  readonly update: (args: Parameters<THook>) => ReturnType<THook>;
+  stop(): void;
+  update(args: Parameters<THook>): ReturnType<THook>;
 }
 ```
 
@@ -174,7 +174,8 @@ type Hook = (...args: any[]) => any;
 ```
 
 ```ts
-interface Result<THook extends Hook> extends AsyncIterable<ReturnType<THook>> {
+interface HookResult<THook extends Hook>
+  extends AsyncIterable<ReturnType<THook>> {
   readonly value: ReturnType<THook>;
   readonly next: Promise<IteratorResult<ReturnType<THook>, undefined>>;
 }
@@ -201,5 +202,5 @@ via the GitHub UI. This triggers the final publication to npm.
 
 ---
 
-Copyright (c) 2020, Clemens Akens. Released under the terms of the
+Copyright (c) 2020-2021, Clemens Akens. Released under the terms of the
 [MIT License](https://github.com/clebert/batis/blob/master/LICENSE).
