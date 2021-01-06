@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from '..';
-import {queueMacrotasks} from '../internals/queue-macrotasks';
+import {queueMacrotask} from '../internals/queue-macrotask';
 
 describe('useRef()', () => {
   let events: ServiceEvent<AnyHook>[];
@@ -52,13 +52,9 @@ describe('useRef()', () => {
       const ref = useRef('x');
 
       useEffect(() => {
-        queueMacrotasks(1)
-          .then(() => (ref.current = 'y'))
-          .catch();
+        ref.current = 'y';
 
-        queueMacrotasks(2)
-          .then(() => setState('b'))
-          .catch();
+        queueMacrotask(() => setState('b')).catch();
       }, []);
 
       return state + ref.current;
@@ -66,7 +62,7 @@ describe('useRef()', () => {
 
     new Service(hook, [], listener);
 
-    await queueMacrotasks(2);
+    await queueMacrotask();
 
     expect(events).toEqual([
       {type: 'value', value: 'ax'},

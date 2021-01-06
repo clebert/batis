@@ -7,7 +7,7 @@ import {
   useEffect,
   useState,
 } from '..';
-import {queueMacrotasks} from '../internals/queue-macrotasks';
+import {queueMacrotask} from '../internals/queue-macrotask';
 
 const error = new Error('Oops!');
 
@@ -86,12 +86,10 @@ describe('useState()', () => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
-        queueMacrotasks(1)
-          .then(() => {
-            setState('b');
-            setState('c');
-          })
-          .catch();
+        queueMacrotask(() => {
+          setState('b');
+          setState('c');
+        }).catch();
       }, []);
 
       return state;
@@ -99,7 +97,7 @@ describe('useState()', () => {
 
     new Service(hook, [], listener);
 
-    await queueMacrotasks(1);
+    await queueMacrotask();
 
     expect(events).toEqual([
       {type: 'value', value: 'a'},
@@ -130,12 +128,10 @@ describe('useState()', () => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
-        queueMacrotasks(1)
-          .then(() => {
-            setState('b');
-            setState('a');
-          })
-          .catch();
+        queueMacrotask(() => {
+          setState('b');
+          setState('a');
+        }).catch();
       }, []);
 
       return state;
@@ -143,7 +139,7 @@ describe('useState()', () => {
 
     new Service(hook, [], listener);
 
-    await queueMacrotasks(1);
+    await queueMacrotask();
 
     expect(events).toEqual([{type: 'value', value: 'a'}]);
     expect(hook).toBeCalledTimes(1);
@@ -251,13 +247,11 @@ describe('useState()', () => {
       const [state, setState] = useState('a');
 
       useEffect(() => {
-        queueMacrotasks(1)
-          .then(() =>
-            setState(() => {
-              throw error;
-            })
-          )
-          .catch();
+        queueMacrotask(() =>
+          setState(() => {
+            throw error;
+          })
+        ).catch();
       }, []);
 
       return state;
@@ -265,7 +259,7 @@ describe('useState()', () => {
 
     new Service(hook, [], listener);
 
-    await queueMacrotasks(1);
+    await queueMacrotask();
 
     expect(events).toEqual([
       {type: 'value', value: 'a'},
