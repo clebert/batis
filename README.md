@@ -27,6 +27,9 @@ npm install batis --save
 
 ## Rationale
 
+<details>
+  <summary>Read more</summary>
+
 I am a front-end developer. One of the problems in front-end development is
 managing state and deriving the user interface from it, as well as handling side
 effects that change the state again. I mainly work with
@@ -60,6 +63,8 @@ I wanted to use this kind of reactive programming in other areas as well, such
 as programming web workers or even JavaScript-controlled robots. Therefore I
 wrote _Batis_...
 
+</details>
+
 ## Usage example
 
 ```js
@@ -88,6 +93,9 @@ greeting.update(['Welcome']);
 
 ### Testing React/Preact Hooks
 
+<details>
+  <summary>Read more</summary>
+
 I wanted to create a library that could be used not only for new standalone
 Hooks, but also for testing existing React/Preact Hooks. As long as the
 React/Preact Hooks to be tested use only the subset of the Hooks implemented by
@@ -107,6 +115,8 @@ Testing Preact Hooks:
 ```js
 jest.mock('preact/hooks', () => require('batis'));
 ```
+
+</details>
 
 ## API reference
 
