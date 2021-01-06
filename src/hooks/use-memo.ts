@@ -1,8 +1,8 @@
-import {HookService} from '../hook-service';
+import {Service} from '../service';
 
 export function useMemo<TValue>(
   createValue: () => TValue,
   dependencies: readonly unknown[]
 ): TValue {
-  return HookService.active.useMemo(createValue, dependencies);
+  return Service.active.useMemo(createValue, dependencies);
 }

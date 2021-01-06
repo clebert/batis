@@ -1,8 +1,15 @@
-import {HookService, useCallback} from '..';
-import {queueMacrotasks} from '../internals/queue-macrotasks';
+import {AnyHook, Service, ServiceEvent, ServiceListener, useCallback} from '..';
 
 describe('useCallback()', () => {
-  test('a memoized callback changes only if one of its dependencies changes', async () => {
+  let events: ServiceEvent<AnyHook>[];
+  let listener: ServiceListener<AnyHook>;
+
+  beforeEach(() => {
+    events = [];
+    listener = events.push.bind(events);
+  });
+
+  test('a memoized callback changes only if one of its dependencies changes', () => {
     let memoizedCallback1: (() => void) | undefined;
     let memoizedCallback2: (() => void) | undefined;
 
@@ -20,9 +27,13 @@ describe('useCallback()', () => {
 
     const callbackA = jest.fn();
     const callbackB = jest.fn();
-    const service = HookService.start(hook, [callbackA, callbackB, 'a', 'x']);
 
-    expect(hook).toHaveBeenCalledTimes(1);
+    const service = new Service(
+      hook,
+      [callbackA, callbackB, 'a', 'x'],
+      listener
+    );
+
     expect(memoizedCallback1).toBe(callbackA);
     expect(memoizedCallback2).toBe(callbackB);
 
@@ -31,7 +42,6 @@ describe('useCallback()', () => {
 
     service.update([callbackC, callbackD, 'a', 'x']);
 
-    expect(hook).toHaveBeenCalledTimes(2);
     expect(memoizedCallback1).toBe(callbackA);
     expect(memoizedCallback2).toBe(callbackB);
 
@@ -40,7 +50,6 @@ describe('useCallback()', () => {
 
     service.update([callbackE, callbackF, 'a', 'y']);
 
-    expect(hook).toHaveBeenCalledTimes(3);
     expect(memoizedCallback1).toBe(callbackA);
     expect(memoizedCallback2).toBe(callbackF);
 
@@ -49,7 +58,6 @@ describe('useCallback()', () => {
 
     service.update([callbackG, callbackH, 'b', 'y']);
 
-    expect(hook).toHaveBeenCalledTimes(4);
     expect(memoizedCallback1).toBe(callbackA);
     expect(memoizedCallback2).toBe(callbackH);
 
@@ -58,11 +66,16 @@ describe('useCallback()', () => {
 
     service.update([callbackI, callbackJ, 'b', 'y']);
 
-    expect(hook).toHaveBeenCalledTimes(5);
     expect(memoizedCallback1).toBe(callbackA);
     expect(memoizedCallback2).toBe(callbackH);
 
-    await queueMacrotasks(10);
+    expect(events).toEqual([
+      {type: 'value', value: undefined},
+      {type: 'value', value: undefined},
+      {type: 'value', value: undefined},
+      {type: 'value', value: undefined},
+      {type: 'value', value: undefined},
+    ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
   });

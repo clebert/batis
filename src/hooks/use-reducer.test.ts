@@ -1,26 +1,42 @@
-import {Dispatch, HookService, useReducer} from '..';
-import {queueMacrotasks} from '../internals/queue-macrotasks';
+import {
+  AnyHook,
+  Dispatch,
+  Service,
+  ServiceEvent,
+  ServiceListener,
+  useReducer,
+} from '..';
 
 describe('useReducer()', () => {
-  test('an initial state can be set once', async () => {
+  let events: ServiceEvent<AnyHook>[];
+  let listener: ServiceListener<AnyHook>;
+
+  beforeEach(() => {
+    events = [];
+    listener = events.push.bind(events);
+  });
+
+  test('an initial state can be set once', () => {
     const hook = jest.fn((arg) => {
       const [state] = useReducer(jest.fn(), arg);
 
       return state;
     });
 
-    const service = HookService.start(hook, ['a']);
+    const service = new Service(hook, ['a'], listener);
 
-    expect(service.result.value).toBe('a');
-    expect(service.update(['b'])).toBe('a');
+    service.update(['b']);
 
-    await queueMacrotasks(10);
+    expect(events).toEqual([
+      {type: 'value', value: 'a'},
+      {type: 'value', value: 'a'},
+    ]);
 
     expect(hook).toBeCalledTimes(2);
   });
 
-  test('an initial state can be created lazily once', async () => {
-    const init = jest.fn((initialArg: string) => initialArg);
+  test('an initial state can be created lazily once', () => {
+    const init = jest.fn((initialArg: string) => initialArg + 'x');
 
     const hook = jest.fn((arg) => {
       const [state] = useReducer(jest.fn(), arg, init);
@@ -28,19 +44,23 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const service = HookService.start(hook, ['a']);
+    const service = new Service(hook, ['a'], listener);
 
-    expect(service.result.value).toBe('a');
-    expect(service.update(['a'])).toBe('a');
-    expect(service.update(['b'])).toBe('a');
+    service.update(['a']);
+    service.update(['b']);
 
-    await queueMacrotasks(10);
+    expect(init).toBeCalledTimes(1);
+
+    expect(events).toEqual([
+      {type: 'value', value: 'ax'},
+      {type: 'value', value: 'ax'},
+      {type: 'value', value: 'ax'},
+    ]);
 
     expect(hook).toBeCalledTimes(3);
-    expect(init).toBeCalledTimes(1);
   });
 
-  test('dispatching an action that leads to a new state, executes the hook again', async () => {
+  test('dispatching an action that leads to a new state, invokes the hook again', () => {
     const hook = jest.fn(() => {
       const [state, dispatch] = useReducer(
         (previousState: string, action: string) => previousState + action,
@@ -55,16 +75,17 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const service = HookService.start(hook, []);
+    new Service(hook, [], listener);
 
-    expect(service.result.value).toBe('abc');
-
-    await queueMacrotasks(10);
+    expect(events).toEqual([
+      {type: 'value', value: 'a'},
+      {type: 'value', value: 'abc'},
+    ]);
 
     expect(hook).toBeCalledTimes(2);
   });
 
-  test('dispatching an action that leads to the same state, does not execute the hook again', async () => {
+  test('dispatching an action that leads to the same state, does not invoke the hook again', () => {
     const hook = jest.fn(() => {
       const [state, dispatch] = useReducer(
         (previousState: string) => previousState,
@@ -76,12 +97,9 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const service = HookService.start(hook, []);
+    new Service(hook, [], listener);
 
-    expect(service.result.value).toBe('a');
-
-    await queueMacrotasks(10);
-
+    expect(events).toEqual([{type: 'value', value: 'a'}]);
     expect(hook).toBeCalledTimes(1);
   });
 
@@ -103,14 +121,17 @@ describe('useReducer()', () => {
       return state;
     });
 
-    const service = HookService.start(hook, []);
+    new Service(hook, [], listener);
 
     initialDispatch!('b');
     initialDispatch!('c');
 
-    expect(await service.result.next).toEqual({done: false, value: 'abc'});
+    await Promise.resolve();
 
-    await queueMacrotasks(10);
+    expect(events).toEqual([
+      {type: 'value', value: 'a'},
+      {type: 'value', value: 'abc'},
+    ]);
 
     expect(hook).toBeCalledTimes(2);
   });

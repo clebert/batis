@@ -1,10 +1,24 @@
-// tslint:disable: no-floating-promises
-
-import {HookService, useEffect, useRef, useState} from '..';
+import {
+  AnyHook,
+  Service,
+  ServiceEvent,
+  ServiceListener,
+  useEffect,
+  useRef,
+  useState,
+} from '..';
 import {queueMacrotasks} from '../internals/queue-macrotasks';
 
 describe('useRef()', () => {
-  test('a ref value is persisted over several re-executions of the hook', async () => {
+  let events: ServiceEvent<AnyHook>[];
+  let listener: ServiceListener<AnyHook>;
+
+  beforeEach(() => {
+    events = [];
+    listener = events.push.bind(events);
+  });
+
+  test('a ref value is persisted over several invocations of the hook', () => {
     const hook = jest.fn(() => {
       const ref1 = useRef('a');
       const ref2 = useRef('x');
@@ -16,40 +30,48 @@ describe('useRef()', () => {
       return ref1.current + ref2.current;
     });
 
-    const service = HookService.start(hook, []);
+    const service = new Service(hook, [], listener);
 
-    expect(service.result.value).toBe('ax');
-    expect(hook).toBeCalledTimes(1);
-    expect(service.update([])).toBe('ay');
-    expect(hook).toBeCalledTimes(2);
-    expect(service.update([])).toBe('ay');
-    expect(hook).toBeCalledTimes(3);
-    expect(service.update([])).toBe('ay');
+    service.update([]);
+    service.update([]);
+    service.update([]);
 
-    await queueMacrotasks(10);
+    expect(events).toEqual([
+      {type: 'value', value: 'ax'},
+      {type: 'value', value: 'ay'},
+      {type: 'value', value: 'ay'},
+      {type: 'value', value: 'ay'},
+    ]);
 
     expect(hook).toBeCalledTimes(4);
   });
 
-  test('changing a ref value does not execute the hook again', async () => {
+  test('changing a ref value does not invoke the hook again', async () => {
     const hook = jest.fn(() => {
       const [state, setState] = useState('a');
       const ref = useRef('x');
 
       useEffect(() => {
-        queueMacrotasks(1).then(() => (ref.current = 'y'));
-        queueMacrotasks(2).then(() => setState('b'));
+        queueMacrotasks(1)
+          .then(() => (ref.current = 'y'))
+          .catch();
+
+        queueMacrotasks(2)
+          .then(() => setState('b'))
+          .catch();
       }, []);
 
       return state + ref.current;
     });
 
-    const service = HookService.start(hook, []);
+    new Service(hook, [], listener);
 
-    expect(service.result.value).toBe('ax');
-    expect(await service.result.next).toEqual({done: false, value: 'by'});
+    await queueMacrotasks(2);
 
-    await queueMacrotasks(10);
+    expect(events).toEqual([
+      {type: 'value', value: 'ax'},
+      {type: 'value', value: 'by'},
+    ]);
 
     expect(hook).toBeCalledTimes(2);
   });

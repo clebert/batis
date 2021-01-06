@@ -1,8 +1,15 @@
-import {HookService, useMemo} from '..';
-import {queueMacrotasks} from '../internals/queue-macrotasks';
+import {AnyHook, Service, ServiceEvent, ServiceListener, useMemo} from '..';
 
 describe('useMemo()', () => {
-  test('a memoized value is only re-computed if one of its dependencies changes', async () => {
+  let events: ServiceEvent<AnyHook>[];
+  let listener: ServiceListener<AnyHook>;
+
+  beforeEach(() => {
+    events = [];
+    listener = events.push.bind(events);
+  });
+
+  test('a memoized value is only re-computed if one of its dependencies changes', () => {
     const createValue1 = jest.fn();
     const createValue2 = jest.fn();
 
@@ -11,36 +18,39 @@ describe('useMemo()', () => {
       useMemo(createValue2, [arg1, arg2]);
     });
 
-    const service = HookService.start(hook, ['a', 'x']);
+    const service = new Service(hook, ['a', 'x'], listener);
 
-    expect(hook).toHaveBeenCalledTimes(1);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(1);
 
     service.update(['a', 'x']);
 
-    expect(hook).toHaveBeenCalledTimes(2);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(1);
 
     service.update(['a', 'y']);
 
-    expect(hook).toHaveBeenCalledTimes(3);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(2);
 
     service.update(['b', 'y']);
 
-    expect(hook).toHaveBeenCalledTimes(4);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(3);
 
     service.update(['b', 'y']);
 
-    await queueMacrotasks(10);
-
-    expect(hook).toHaveBeenCalledTimes(5);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(3);
+
+    expect(events).toEqual([
+      {type: 'value', value: undefined},
+      {type: 'value', value: undefined},
+      {type: 'value', value: undefined},
+      {type: 'value', value: undefined},
+      {type: 'value', value: undefined},
+    ]);
+
+    expect(hook).toHaveBeenCalledTimes(5);
   });
 });

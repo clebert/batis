@@ -63,7 +63,7 @@ wrote _Batis_...
 ## Usage example
 
 ```js
-import {HookService, useEffect, useState} from 'batis';
+import {Service, useEffect, useState} from 'batis';
 
 function useGreeting(salutation) {
   const [name, setName] = useState('John Doe');
@@ -75,24 +75,15 @@ function useGreeting(salutation) {
   return `${salutation}, ${name}!`;
 }
 
-const greeting = HookService.start(useGreeting, ['Hello']);
+const greeting = new Service(useGreeting, ['Hello'], console.log);
 
-console.log('Current:', greeting.result.value);
-
-(async () => {
-  for await (const value of greeting.result) {
-    console.log('Iterator:', value);
-  }
-})();
-
-console.log('Update:', greeting.update(['Welcome']));
+greeting.update(['Welcome']);
 ```
 
 ```
-Current: Hello, John Doe!
-Update: Welcome, John Doe!
-Iterator: Welcome, John Doe!
-Iterator: Welcome, Jane Doe!
+{ type: 'value', value: 'Hello, John Doe!' }
+{ type: 'value', value: 'Welcome, John Doe!' }
+{ type: 'value', value: 'Welcome, Jane Doe!' }
 ```
 
 ### Testing React/Preact Hooks
@@ -155,29 +146,45 @@ Hooks:
 ### Type definitions
 
 ```ts
-class HookService<THook extends Hook = Hook> {
-  static start<THook extends Hook>(
+class Service<THook extends AnyHook> {
+  constructor(
     hook: THook,
-    args: Parameters<THook>
-  ): HookService<THook>;
+    args: Parameters<THook>,
+    listener: ServiceListener<THook>
+  );
 
-  get result(): HookResult<THook>;
-  get stopped(): boolean;
-
-  stop(): void;
-  update(args: Parameters<THook>): ReturnType<THook>;
+  disposeEffects(): void;
+  update(args: Parameters<THook>): void;
 }
 ```
 
 ```ts
-type Hook = (...args: any[]) => any;
+type AnyHook = (...args: any[]) => any;
 ```
 
 ```ts
-interface HookResult<THook extends Hook>
-  extends AsyncIterable<ReturnType<THook>> {
+type ServiceListener<THook extends AnyHook> = (
+  event: ServiceEvent<THook>
+) => void;
+```
+
+```ts
+type ServiceEvent<THook extends AnyHook> =
+  | ServiceValueEvent<THook>
+  | ServiceErrorEvent;
+```
+
+```ts
+interface ServiceValueEvent<THook extends AnyHook> {
+  readonly type: 'value';
   readonly value: ReturnType<THook>;
-  readonly next: Promise<IteratorResult<ReturnType<THook>, undefined>>;
+}
+```
+
+```ts
+interface ServiceErrorEvent {
+  readonly type: 'error';
+  readonly error: unknown;
 }
 ```
 

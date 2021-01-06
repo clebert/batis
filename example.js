@@ -1,6 +1,6 @@
 // @ts-check
 
-const {HookService, useEffect, useState} = require('./lib/cjs');
+const {Service, useEffect, useState} = require('./lib/cjs');
 
 function useGreeting(salutation) {
   const [name, setName] = useState('John Doe');
@@ -12,21 +12,12 @@ function useGreeting(salutation) {
   return `${salutation}, ${name}!`;
 }
 
-const greeting = HookService.start(useGreeting, ['Hello']);
+const greeting = new Service(useGreeting, ['Hello'], console.log);
 
-console.log('Current:', greeting.result.value);
-
-(async () => {
-  for await (const value of greeting.result) {
-    console.log('Iterator:', value);
-  }
-})();
-
-console.log('Update:', greeting.update(['Welcome']));
+greeting.update(['Welcome']);
 
 /*
-Current: Hello, John Doe!
-Update: Welcome, John Doe!
-Iterator: Welcome, John Doe!
-Iterator: Welcome, Jane Doe!
+{ type: 'value', value: 'Hello, John Doe!' }
+{ type: 'value', value: 'Welcome, John Doe!' }
+{ type: 'value', value: 'Welcome, Jane Doe!' }
 */

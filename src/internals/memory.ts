@@ -11,11 +11,11 @@ export interface EffectMemoryCell {
   outdated: boolean;
   effect: Effect;
   dependencies: readonly unknown[] | undefined;
-  cleanUpEffect?: CleanUpEffect;
+  disposeEffect?: DisposeEffect;
 }
 
-export type Effect = () => CleanUpEffect | void;
-export type CleanUpEffect = () => void;
+export type Effect = () => DisposeEffect | void;
+export type DisposeEffect = () => void;
 
 export interface StateMemoryCell<TState> {
   readonly kind: 'StateMemoryCell';
