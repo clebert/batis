@@ -153,8 +153,8 @@ class Service<THook extends AnyHook> {
     listener: ServiceListener<THook>
   );
 
-  disposeEffects(): void;
   update(args: Parameters<THook>): void;
+  disposeEffects(): void;
 }
 ```
 

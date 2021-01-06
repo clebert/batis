@@ -67,10 +67,6 @@ export class Service<THook extends AnyHook> {
     this.update(args);
   }
 
-  disposeEffects(): void {
-    this.#disposeEffects(true);
-  }
-
   update(args: Parameters<THook>): void {
     try {
       if (
@@ -103,6 +99,10 @@ export class Service<THook extends AnyHook> {
     } catch (error: unknown) {
       this.#listener({type: 'error', error});
     }
+  }
+
+  disposeEffects(): void {
+    this.#disposeEffects(true);
   }
 
   useEffect(effect: Effect, dependencies?: unknown[]): void {
