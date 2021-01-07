@@ -51,69 +51,79 @@ which in turn can lead to state changes (using the
 [`useState`](https://reactjs.org/docs/hooks-overview.html#state-hook) Hook) and
 thus to further renderings.
 
-Even though Hooks are actually a constrained solution for modeling states in
+Even though Hooks are actually a constrained solution for managing state in
 actually stateless functional components, they have proven to be very elegant in
 their design. In my opinion, they are particularly suitable for modeling
 finite-state automata.
 
-_Note: I have another [side project](https://github.com/clebert/loxia) (WIP)
-where I am trying to shed more light on this design pattern._
-
 I wanted to use this kind of reactive programming in other areas as well, such
 as programming web workers or even JavaScript-controlled robots. Therefore I
-wrote _Batis_...
+wrote Batis...
 
 </details>
 
 ## Usage example
 
 ```js
-import {Service, useEffect, useState} from 'batis';
+import {Service} from 'batis';
 
 function useGreeting(salutation) {
-  const [name, setName] = useState('John Doe');
+  const [name, setName] = Service.useState('John Doe');
 
-  useEffect(() => {
-    setTimeout(() => setName('Jane Doe'), 500);
-  }, []);
+  Service.useEffect(() => {
+    if (name === 'John Doe') {
+      setName('Jane Doe');
+    }
 
-  return `${salutation}, ${name}!`;
+    const timeoutId = setTimeout(() => setName('Johnny Doe'));
+
+    return () => clearTimeout(timeoutId);
+  }, [name]);
+
+  return Service.useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
 }
 
-const greeting = new Service(useGreeting, ['Hello'], console.log);
+const greeting = new Service(useGreeting, console.log);
 
-greeting.update(['Welcome']);
+greeting.invoke(['Hello']);
+greeting.invoke(['Welcome']);
+greeting.reset();
+greeting.invoke(['Hi']);
+greeting.invoke(['Hey']);
 ```
 
 ```
-{ type: 'value', value: 'Hello, John Doe!' }
-{ type: 'value', value: 'Welcome, John Doe!' }
-{ type: 'value', value: 'Welcome, Jane Doe!' }
+{ type: 'value', value: 'Hello, John Doe!', async: false, intermediate: true }
+{ type: 'value', value: 'Hello, Jane Doe!', async: false, intermediate: false }
+{ type: 'value', value: 'Welcome, Jane Doe!', async: false, intermediate: false }
+{ type: 'reset' }
+{ type: 'value', value: 'Hi, John Doe!', async: false, intermediate: true }
+{ type: 'value', value: 'Hi, Jane Doe!', async: false, intermediate: false }
+{ type: 'value', value: 'Hey, Jane Doe!', async: false, intermediate: false }
+{ type: 'value', value: 'Hey, Johnny Doe!', async: true, intermediate: false }
 ```
 
 ### Testing React/Preact Hooks
 
+You can use Batis to test your React/Preact implemented Hooks, as long as the
+Hooks you are testing only use the subset of React Hooks implemented by Batis. A
+test with [Jest](https://jestjs.io) can be set up as follows:
+
 <details>
-  <summary>Read more</summary>
-
-I wanted to create a library that could be used not only for new standalone
-Hooks, but also for testing existing React/Preact Hooks. As long as the
-React/Preact Hooks to be tested use only the subset of the Hooks implemented by
-_Batis_, a test using [Jest](https://jestjs.io) can be set up as follows.
-
-Testing React Hooks:
+  <summary>Show code</summary>
 
 ```js
-jest.mock('react', () => ({
-  ...require('react'),
-  ...require('batis'),
-}));
+import {Service} from 'batis';
 ```
 
-Testing Preact Hooks:
+```js
+import * as React from 'react';
+
+jest.mock('react', () => ({...React, ...Service}));
+```
 
 ```js
-jest.mock('preact/hooks', () => require('batis'));
+jest.mock('preact/hooks', () => Service);
 ```
 
 </details>
@@ -125,21 +135,49 @@ also applies to this library and should be consulted.
 
 ### Implementation status
 
-Below you can see the implementation status of the built-in subset of React
-Hooks:
+Below you can see the subset of React Hooks implemented by Batis:
 
-| Hook                                         | Status        |
-| -------------------------------------------- | ------------- |
-| [`useState`][usestate]                       | ✅Implemented |
-| [`useEffect`][useeffect]                     | ✅Implemented |
-| [`useReducer`][usereducer]                   | ✅Implemented |
-| [`useCallback`][usecallback]                 | ✅Implemented |
-| [`useMemo`][usememo]                         | ✅Implemented |
-| [`useRef`][useref]                           | ✅Implemented |
-| [`useContext`][usecontext]                   | ❌Not planned |
-| [`useImperativeHandle`][useimperativehandle] | ❌Not planned |
-| [`useLayoutEffect`][uselayouteffect]         | ❌Not planned |
-| [`useDebugValue`][usedebugvalue]             | ❌Not planned |
+| React Hook                                   | Status                        |
+| -------------------------------------------- | ----------------------------- |
+| [`useState`][usestate]                       | ✅Implemented                 |
+| [`useEffect`][useeffect]                     | ✅Implemented                 |
+| [`useMemo`][usememo]                         | ✅Implemented                 |
+| [`useCallback`][usecallback]                 | ✅Implemented                 |
+| [`useRef`][useref]                           | ✅Implemented                 |
+| [`useReducer`][usereducer]                   | ❌Not planned, see note below |
+| [`useContext`][usecontext]                   | ❌Not planned                 |
+| [`useImperativeHandle`][useimperativehandle] | ❌Not planned                 |
+| [`useLayoutEffect`][uselayouteffect]         | ❌Not planned                 |
+| [`useDebugValue`][usedebugvalue]             | ❌Not planned                 |
+
+**Note:** The three Hook primitives are `useState`, `useEffect`, and `useMemo`.
+For example, `useCallback` and `useRef` are implemented using `useMemo` as
+one-liners. In my opinion `useReducer` is rather special (due to the popularity
+of Redux) and unlike `useCallback` and `useRef` not that widely used or
+generally useful. Nevertheless, it can be implemented very easily by yourself
+using `useState` and `useCallback`:
+
+<details>
+  <summary>Show implementation</summary>
+
+```js
+import {Service} from 'batis';
+
+function useReducer(reducer, initialArg, init) {
+  const [state, setState] = Service.useState(
+    init ? () => init(initialArg) : initialArg
+  );
+
+  const dispatch = Service.useCallback(
+    (action) => setState((previousState) => reducer(previousState, action)),
+    []
+  );
+
+  return [state, dispatch];
+}
+```
+
+</details>
 
 [usestate]: https://reactjs.org/docs/hooks-reference.html#usestate
 [useeffect]: https://reactjs.org/docs/hooks-reference.html#useeffect
@@ -157,14 +195,28 @@ Hooks:
 
 ```ts
 class Service<THook extends AnyHook> {
-  constructor(
-    hook: THook,
-    args: Parameters<THook>,
-    listener: ServiceListener<THook>
-  );
+  static useState<TState>(
+    initialState: TState | (() => TState)
+  ): [TState, SetState<TState>];
 
-  update(args: Parameters<THook>): void;
-  disposeEffects(): void;
+  static useEffect(effect: Effect, dependencies?: readonly unknown[]): void;
+
+  static useMemo<TValue>(
+    createValue: () => TValue,
+    dependencies: readonly unknown[]
+  ): TValue;
+
+  static useCallback<TCallback extends (...args: any[]) => any>(
+    callback: TCallback,
+    dependencies: readonly unknown[]
+  ): TCallback;
+
+  static useRef<TValue>(initialValue: TValue): {current: TValue};
+
+  constructor(hook: THook, listener: ServiceListener<THook>);
+
+  invoke(args: Parameters<THook>): void;
+  reset(): void;
 }
 ```
 
@@ -181,21 +233,35 @@ type ServiceListener<THook extends AnyHook> = (
 ```ts
 type ServiceEvent<THook extends AnyHook> =
   | ServiceValueEvent<THook>
+  | ServiceResetEvent
   | ServiceErrorEvent;
-```
 
-```ts
 interface ServiceValueEvent<THook extends AnyHook> {
   readonly type: 'value';
   readonly value: ReturnType<THook>;
+  readonly async: boolean;
+  readonly intermediate: boolean;
+}
+
+interface ServiceResetEvent {
+  readonly type: 'reset';
+}
+
+interface ServiceErrorEvent {
+  readonly type: 'error';
+  readonly error: unknown;
+  readonly async: boolean;
 }
 ```
 
 ```ts
-interface ServiceErrorEvent {
-  readonly type: 'error';
-  readonly error: unknown;
-}
+type SetState<TState> = (state: TState | CreateState<TState>) => void;
+type CreateState<TState> = (previousState: TState) => TState;
+```
+
+```ts
+type Effect = () => DisposeEffect | void;
+type DisposeEffect = () => void;
 ```
 
 ## Development

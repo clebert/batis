@@ -1,0 +1,133 @@
+import {isFunction} from './is-function';
+import {isTypeOf} from './is-type-of';
+
+export type MemoryCell =
+  | EffectMemoryCell
+  | StateMemoryCell<any>
+  | MemoMemoryCell<any>;
+
+export interface EffectMemoryCell {
+  readonly type: 'effect';
+
+  outdated: boolean;
+  effect: Effect;
+  dependencies: readonly unknown[] | undefined;
+  disposeEffect?: DisposeEffect;
+}
+
+export type Effect = () => DisposeEffect | void;
+export type DisposeEffect = () => void;
+
+export interface StateMemoryCell<TState> {
+  readonly type: 'state';
+  readonly setState: SetState<TState>;
+
+  state: TState;
+  stateChanges: (TState | CreateState<TState>)[];
+}
+
+export type SetState<TState> = (state: TState | CreateState<TState>) => void;
+export type CreateState<TState> = (previousState: TState) => TState;
+
+export interface MemoMemoryCell<TValue> {
+  readonly type: 'memo';
+
+  value: TValue;
+  dependencies: readonly unknown[];
+}
+
+export class Memory {
+  #memoryCells: MemoryCell[] = [];
+  #allocated = false;
+  #pointer = 0;
+
+  reset(hard: boolean = false): void {
+    if (hard) {
+      this.#disposeEffects(true);
+
+      this.#memoryCells = [];
+    } else if (this.#pointer !== this.#memoryCells.length) {
+      throw new Error('The number of hooks used must not change.');
+    }
+
+    this.#allocated = !hard;
+    this.#pointer = 0;
+  }
+
+  read<TMemoryCell extends MemoryCell>(
+    expectedType: TMemoryCell['type']
+  ): TMemoryCell | undefined {
+    const memoryCell = this.#memoryCells[this.#pointer];
+
+    if (!memoryCell && this.#allocated) {
+      throw new Error('The number of hooks used must not change.');
+    }
+
+    if (memoryCell && !isTypeOf<TMemoryCell>(expectedType, memoryCell)) {
+      throw new Error('The order of the hooks used must not change.');
+    }
+
+    return memoryCell;
+  }
+
+  write<TMemoryCell extends MemoryCell>(memoryCell: TMemoryCell): TMemoryCell {
+    return (this.#memoryCells[this.#pointer] = memoryCell);
+  }
+
+  movePointer(): void {
+    this.#pointer += 1;
+  }
+
+  applyStateChanges(): boolean {
+    let changed = false;
+
+    for (const memoryCell of this.#memoryCells) {
+      if (isTypeOf<StateMemoryCell<unknown>>('state', memoryCell)) {
+        const previousState = memoryCell.state;
+
+        for (const stateChange of memoryCell.stateChanges) {
+          memoryCell.state = isFunction<CreateState<unknown>>(stateChange)
+            ? stateChange(memoryCell.state)
+            : stateChange;
+        }
+
+        if (!Object.is(previousState, memoryCell.state)) {
+          changed = true;
+        }
+
+        memoryCell.stateChanges = [];
+      }
+    }
+
+    return changed;
+  }
+
+  triggerEffects(): void {
+    this.#disposeEffects();
+
+    for (const memoryCell of this.#memoryCells) {
+      if (isTypeOf<EffectMemoryCell>('effect', memoryCell)) {
+        if (memoryCell.outdated) {
+          memoryCell.outdated = false;
+          memoryCell.disposeEffect = memoryCell.effect() || undefined;
+        }
+      }
+    }
+  }
+
+  readonly #disposeEffects = (force: boolean = false): void => {
+    for (const memoryCell of this.#memoryCells) {
+      if (isTypeOf<EffectMemoryCell>('effect', memoryCell)) {
+        if ((memoryCell.outdated || force) && memoryCell.disposeEffect) {
+          try {
+            memoryCell.disposeEffect();
+          } catch (error) {
+            console.error('Failed to dispose an effect.', error);
+          }
+
+          memoryCell.disposeEffect = undefined;
+        }
+      }
+    }
+  };
+}
