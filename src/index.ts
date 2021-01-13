@@ -46,7 +46,7 @@ let activeHost: Host<AnyAgent> | undefined;
 export class Host<TAgent extends AnyAgent> {
   static useState<TState>(
     initialState: TState | (() => TState)
-  ): [TState, SetState<TState>] {
+  ): readonly [TState, SetState<TState>] {
     const host = activeHost!;
 
     let memoryCell = host.#memory.read<StateMemoryCell<TState>>('state');

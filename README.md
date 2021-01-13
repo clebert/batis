@@ -183,7 +183,7 @@ function useReducer(reducer, initialArg, init) {
 class Host<TAgent extends AnyAgent> {
   static useState<TState>(
     initialState: TState | (() => TState)
-  ): [TState, SetState<TState>];
+  ): readonly [TState, SetState<TState>];
 
   static useEffect(effect: Effect, dependencies?: readonly unknown[]): void;
 
