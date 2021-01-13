@@ -28,11 +28,11 @@ npm install batis --save
 ## Rationale
 
 Even though [React Hooks](https://reactjs.org/docs/hooks-intro.html) are
-actually a constrained solution for managing state in actually stateless
-functional components, they have proven to be very elegant in their design. In
-my opinion, they are particularly suitable for modeling finite-state automata. I
-wanted to use this kind of reactive programming in other areas as well.
-Therefore I wrote Batis...
+actually a constrained solution for managing state and effects in functional
+stateless components, they have proven to be very elegant in their design. In my
+opinion, they are particularly suitable for modeling finite-state automata. I
+wanted to use this type of reactive programming in areas other than web UI
+development. Therefore I wrote Batis...
 
 **Note:** With [Loxia](https://github.com/clebert/loxia), I try to shed more
 light on the modeling of finite-state automata using Batis agents or React
@@ -40,13 +40,15 @@ Hooks.
 
 ## Terminology
 
-There are two main entities in this library, hosts and agents.
+There are two main entities in Batis, hosts and agents.
 
-**By analogy with React, a host is a component and an agent is a Hook.**
+**By analogy with React, a host is like React DOM and an agent is like a
+functional stateless component.**
 
-An agent is like a virus in biology, it cannot exist without a host cell because
-it has no metabolism of its own. So to use an agent, you need a host. A host
-manages state and sends events to a listener function.
+An agent is comparable to a biological virus. A virus is dependent on a host
+cell because it has no metabolism of its own. So, to use a functional stateless
+agent, you need a host. A host manages the state and effects of an agent and
+sends events to a listener function.
 
 ## Usage example
 
