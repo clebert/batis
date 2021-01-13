@@ -27,11 +27,12 @@ npm install batis --save
 
 ## Rationale
 
-Even though React Hooks are actually a constrained solution for managing state
-in actually stateless functional components, they have proven to be very elegant
-in their design. In my opinion, they are particularly suitable for modeling
-finite-state automata. I wanted to use this kind of reactive programming in
-other areas as well. Therefore I wrote Batis...
+Even though [React Hooks](https://reactjs.org/docs/hooks-intro.html) are
+actually a constrained solution for managing state in actually stateless
+functional components, they have proven to be very elegant in their design. In
+my opinion, they are particularly suitable for modeling finite-state automata. I
+wanted to use this kind of reactive programming in other areas as well.
+Therefore I wrote Batis...
 
 ## Terminology
 
