@@ -15,7 +15,7 @@
 [size-badge]: https://badgen.net/bundlephobia/minzip/batis
 [size-link]: https://bundlephobia.com/result?p=batis
 
-A JavaScript library for reactive programming using React-like Hooks.
+General reactive JavaScript programming using the idea of React Hooks.
 
 <img src="./eagle.jpg"/>
 
