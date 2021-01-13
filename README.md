@@ -27,47 +27,28 @@ npm install batis --save
 
 ## Rationale
 
-<details>
-  <summary>Read more</summary>
+Even though React Hooks are actually a constrained solution for managing state
+in actually stateless functional components, they have proven to be very elegant
+in their design. In my opinion, they are particularly suitable for modeling
+finite-state automata. I wanted to use this kind of reactive programming in
+other areas as well. Therefore I wrote Batis...
 
-I am a front-end developer. One of the problems in front-end development is
-managing state and deriving the user interface from it, as well as handling side
-effects that change the state again. I mainly work with
-[React](https://reactjs.org) which allows me to solve the described problem via
-functional reactive programming.
+## Terminology
 
-Reactive programming is generally understood to be programming using
-asynchronous data streams, which form the conceptual basis for libraries like
-[RxJS](https://github.com/ReactiveX/rxjs),
-[xstream](https://github.com/staltz/xstream), or as a counterpart to React
-[Cycle.js](https://cycle.js.org). In React, however, reactive programming is not
-about dealing with streams, but with so-called
-[Hooks](https://reactjs.org/docs/hooks-intro.html#motivation).
+There are two main entities in this library, hosts and agents.
 
-A functional component is rendered, whereby side effects are declared based on
-its current state (using the
-[`useEffect`](https://reactjs.org/docs/hooks-overview.html#effect-hook) Hook),
-which in turn can lead to state changes (using the
-[`useState`](https://reactjs.org/docs/hooks-overview.html#state-hook) Hook) and
-thus to further renderings.
+**By analogy with React, a host is a component and an agent is a Hook.**
 
-Even though Hooks are actually a constrained solution for managing state in
-actually stateless functional components, they have proven to be very elegant in
-their design. In my opinion, they are particularly suitable for modeling
-finite-state automata.
-
-I wanted to use this kind of reactive programming in other areas as well, such
-as programming web workers or even JavaScript-controlled robots. Therefore I
-wrote Batis...
-
-</details>
+An agent is like a virus in biology, it cannot exist without a host cell because
+it has no metabolism of its own. So to use an agent, you need a host. A host
+manages state and sends events to a listener function.
 
 ## Usage example
 
 ```js
-import {Service} from 'batis';
+import {Host} from 'batis';
 
-const {useEffect, useMemo, useState} = Service;
+const {useEffect, useMemo, useState} = Host;
 
 function useGreeting(salutation) {
   const [name, setName] = useState('John Doe');
@@ -85,13 +66,13 @@ function useGreeting(salutation) {
   return useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
 }
 
-const greeting = new Service(useGreeting, console.log);
+const greeting = new Host(useGreeting, console.log);
 
-greeting.invoke(['Hello']);
-greeting.invoke(['Welcome']);
+greeting.render(['Hello']);
+greeting.render(['Welcome']);
 greeting.reset();
-greeting.invoke(['Hi']);
-greeting.invoke(['Hey']);
+greeting.render(['Hi']);
+greeting.render(['Hey']);
 ```
 
 ```
@@ -115,17 +96,17 @@ test with [Jest](https://jestjs.io) can be set up as follows:
   <summary>Show code</summary>
 
 ```js
-import {Service} from 'batis';
+import {Host} from 'batis';
 ```
 
 ```js
 import * as React from 'react';
 
-jest.mock('react', () => ({...React, ...Service}));
+jest.mock('react', () => ({...React, ...Host}));
 ```
 
 ```js
-jest.mock('preact/hooks', () => Service);
+jest.mock('preact/hooks', () => Host);
 ```
 
 </details>
@@ -152,25 +133,27 @@ Below you can see the subset of React Hooks implemented by Batis:
 | [`useLayoutEffect`][uselayouteffect]         | ❌Not planned                 |
 | [`useDebugValue`][usedebugvalue]             | ❌Not planned                 |
 
-**Note:** The three Hook primitives are `useState`, `useEffect`, and `useMemo`.
-For example, `useCallback` and `useRef` are implemented using `useMemo` as
+**Note:** The three primitives are `useState`, `useEffect`, and `useMemo`. For
+example, `useCallback` and `useRef` are implemented using `useMemo` as
 one-liners. In my opinion `useReducer` is rather special (due to the popularity
 of Redux) and unlike `useCallback` and `useRef` not that widely used or
 generally useful. Nevertheless, it can be implemented very easily by yourself
 using `useState` and `useCallback`:
 
 <details>
-  <summary>Show implementation</summary>
+  <summary>Show code</summary>
 
 ```js
-import {Service} from 'batis';
+import {Host} from 'batis';
+
+const {useCallback, useState} = Host;
 
 function useReducer(reducer, initialArg, init) {
-  const [state, setState] = Service.useState(
+  const [state, setState] = useState(
     init ? () => init(initialArg) : initialArg
   );
 
-  const dispatch = Service.useCallback(
+  const dispatch = useCallback(
     (action) => setState((previousState) => reducer(previousState, action)),
     []
   );
@@ -196,7 +179,7 @@ function useReducer(reducer, initialArg, init) {
 ### Type definitions
 
 ```ts
-class Service<THook extends AnyHook> {
+class Host<TAgent extends AnyAgent> {
   static useState<TState>(
     initialState: TState | (() => TState)
   ): [TState, SetState<TState>];
@@ -213,43 +196,45 @@ class Service<THook extends AnyHook> {
     dependencies: readonly unknown[]
   ): TCallback;
 
-  static useRef<TValue>(initialValue: TValue): {current: TValue};
+  static useRef<TValue>(
+    initialValue: TValue
+  ): {
+    current: TValue;
+  };
 
-  constructor(hook: THook, listener: ServiceListener<THook>);
+  constructor(agent: TAgent, listener: HostListener<TAgent>);
 
-  invoke(args: Parameters<THook>): void;
+  render(args: Parameters<TAgent>): void;
   reset(): void;
 }
 ```
 
 ```ts
-type AnyHook = (...args: any[]) => any;
+type AnyAgent = (...args: any[]) => any;
 ```
 
 ```ts
-type ServiceListener<THook extends AnyHook> = (
-  event: ServiceEvent<THook>
-) => void;
+type HostListener<TAgent extends AnyAgent> = (event: HostEvent<TAgent>) => void;
 ```
 
 ```ts
-type ServiceEvent<THook extends AnyHook> =
-  | ServiceValueEvent<THook>
-  | ServiceResetEvent
-  | ServiceErrorEvent;
+type HostEvent<TAgent extends AnyAgent> =
+  | HostValueEvent<TAgent>
+  | HostResetEvent
+  | HostErrorEvent;
 
-interface ServiceValueEvent<THook extends AnyHook> {
+interface HostValueEvent<TAgent extends AnyAgent> {
   readonly type: 'value';
-  readonly value: ReturnType<THook>;
+  readonly value: ReturnType<TAgent>;
   readonly async: boolean;
   readonly intermediate: boolean;
 }
 
-interface ServiceResetEvent {
+interface HostResetEvent {
   readonly type: 'reset';
 }
 
-interface ServiceErrorEvent {
+interface HostErrorEvent {
   readonly type: 'error';
   readonly error: unknown;
   readonly async: boolean;

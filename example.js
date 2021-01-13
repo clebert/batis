@@ -1,7 +1,7 @@
 // @ts-check
 
-const {Service} = require('./lib/cjs');
-const {useEffect, useMemo, useState} = Service;
+const {Host} = require('./lib/cjs');
+const {useEffect, useMemo, useState} = Host;
 
 function useGreeting(salutation) {
   const [name, setName] = useState('John Doe');
@@ -19,13 +19,13 @@ function useGreeting(salutation) {
   return useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
 }
 
-const greeting = new Service(useGreeting, console.log);
+const greeting = new Host(useGreeting, console.log);
 
-greeting.invoke(['Hello']);
-greeting.invoke(['Welcome']);
+greeting.render(['Hello']);
+greeting.render(['Welcome']);
 greeting.reset();
-greeting.invoke(['Hi']);
-greeting.invoke(['Hey']);
+greeting.render(['Hi']);
+greeting.render(['Hey']);
 
 /*
 { type: 'value', value: 'Hello, John Doe!', async: false, intermediate: true }

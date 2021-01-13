@@ -1,4 +1,4 @@
-import {areHookInputsEqual} from './are-hook-inputs-equal';
+import {areDependenciesEqual} from './are-dependencies-equal';
 import {isFunction} from './is-function';
 import {
   CreateState,
@@ -13,53 +13,53 @@ import {
 
 export {CreateState, DisposeEffect, Effect, SetState};
 
-export type AnyHook = (...args: any[]) => any;
+export type AnyAgent = (...args: any[]) => any;
 
-export type ServiceListener<THook extends AnyHook> = (
-  event: ServiceEvent<THook>
+export type HostListener<TAgent extends AnyAgent> = (
+  event: HostEvent<TAgent>
 ) => void;
 
-export type ServiceEvent<THook extends AnyHook> =
-  | ServiceValueEvent<THook>
-  | ServiceResetEvent
-  | ServiceErrorEvent;
+export type HostEvent<TAgent extends AnyAgent> =
+  | HostValueEvent<TAgent>
+  | HostResetEvent
+  | HostErrorEvent;
 
-export interface ServiceValueEvent<THook extends AnyHook> {
+export interface HostValueEvent<TAgent extends AnyAgent> {
   readonly type: 'value';
-  readonly value: ReturnType<THook>;
+  readonly value: ReturnType<TAgent>;
   readonly async: boolean;
   readonly intermediate: boolean;
 }
 
-export interface ServiceResetEvent {
+export interface HostResetEvent {
   readonly type: 'reset';
 }
 
-export interface ServiceErrorEvent {
+export interface HostErrorEvent {
   readonly type: 'error';
   readonly error: unknown;
   readonly async: boolean;
 }
 
-let active: Service<AnyHook> | undefined;
+let activeHost: Host<AnyAgent> | undefined;
 
-export class Service<THook extends AnyHook> {
+export class Host<TAgent extends AnyAgent> {
   static useState<TState>(
     initialState: TState | (() => TState)
   ): [TState, SetState<TState>] {
-    const service = active!;
+    const host = activeHost!;
 
-    let memoryCell = service.#memory.read<StateMemoryCell<TState>>('state');
+    let memoryCell = host.#memory.read<StateMemoryCell<TState>>('state');
 
     if (!memoryCell) {
-      memoryCell = service.#memory.write({
+      memoryCell = host.#memory.write({
         type: 'state',
         setState: (state) => {
           memoryCell!.stateChanges = [...memoryCell!.stateChanges, state];
 
-          if (service !== active) {
+          if (host !== activeHost) {
             Promise.resolve()
-              .then(() => service.#invokeAsync())
+              .then(() => host.#renderAsync())
               .catch();
           }
         },
@@ -68,24 +68,24 @@ export class Service<THook extends AnyHook> {
       });
     }
 
-    service.#memory.movePointer();
+    host.#memory.movePointer();
 
     return [memoryCell.state, memoryCell.setState];
   }
 
   static useEffect(effect: Effect, dependencies?: readonly unknown[]): void {
-    const service = active!;
-    const memoryCell = service.#memory.read<EffectMemoryCell>('effect');
+    const host = activeHost!;
+    const memoryCell = host.#memory.read<EffectMemoryCell>('effect');
 
     if (!memoryCell) {
-      service.#memory.write({
+      host.#memory.write({
         type: 'effect',
         outdated: true,
         effect,
         dependencies,
       });
     } else if (
-      !areHookInputsEqual(memoryCell.dependencies, dependencies) ||
+      !areDependenciesEqual(memoryCell.dependencies, dependencies) ||
       memoryCell.outdated
     ) {
       memoryCell.outdated = true;
@@ -93,29 +93,29 @@ export class Service<THook extends AnyHook> {
       memoryCell.dependencies = dependencies;
     }
 
-    service.#memory.movePointer();
+    host.#memory.movePointer();
   }
 
   static useMemo<TValue>(
     createValue: () => TValue,
     dependencies: readonly unknown[]
   ): TValue {
-    const service = active!;
+    const host = activeHost!;
 
-    let memoryCell = service.#memory.read<MemoMemoryCell<TValue>>('memo');
+    let memoryCell = host.#memory.read<MemoMemoryCell<TValue>>('memo');
 
     if (!memoryCell) {
-      memoryCell = service.#memory.write({
+      memoryCell = host.#memory.write({
         type: 'memo',
         value: createValue(),
         dependencies,
       });
-    } else if (!areHookInputsEqual(memoryCell.dependencies, dependencies)) {
+    } else if (!areDependenciesEqual(memoryCell.dependencies, dependencies)) {
       memoryCell.value = createValue();
       memoryCell.dependencies = dependencies;
     }
 
-    service.#memory.movePointer();
+    host.#memory.movePointer();
 
     return memoryCell.value;
   }
@@ -124,29 +124,29 @@ export class Service<THook extends AnyHook> {
     callback: TCallback,
     dependencies: readonly unknown[]
   ): TCallback {
-    return Service.useMemo(() => callback, dependencies);
+    return Host.useMemo(() => callback, dependencies);
   }
 
   static useRef<TValue>(initialValue: TValue): {current: TValue} {
-    return Service.useMemo(() => ({current: initialValue}), []);
+    return Host.useMemo(() => ({current: initialValue}), []);
   }
 
   readonly #memory = new Memory();
-  readonly #hook: THook;
-  readonly #listener: ServiceListener<THook>;
+  readonly #agent: TAgent;
+  readonly #listener: HostListener<TAgent>;
 
-  #args: Parameters<THook> | undefined;
+  #args: Parameters<TAgent> | undefined;
 
-  constructor(hook: THook, listener: ServiceListener<THook>) {
-    this.#hook = hook;
+  constructor(agent: TAgent, listener: HostListener<TAgent>) {
+    this.#agent = agent;
     this.#listener = listener;
   }
 
-  invoke(args: Parameters<THook>): void {
+  render(args: Parameters<TAgent>): void {
     this.#args = args;
 
     try {
-      this.#invoke(false);
+      this.#render(false);
     } catch (error: unknown) {
       this.#memory.reset(true);
       this.#listener({type: 'error', error, async: false});
@@ -158,10 +158,10 @@ export class Service<THook extends AnyHook> {
     this.#listener({type: 'reset'});
   }
 
-  readonly #invokeAsync = (): void => {
+  readonly #renderAsync = (): void => {
     try {
       if (this.#memory.applyStateChanges()) {
-        this.#invoke(true);
+        this.#render(true);
       }
     } catch (error: unknown) {
       this.#memory.reset(true);
@@ -169,8 +169,8 @@ export class Service<THook extends AnyHook> {
     }
   };
 
-  readonly #invoke = (async: boolean): void => {
-    let valueEvent: Omit<ServiceValueEvent<THook>, 'intermediate'> | undefined;
+  readonly #render = (async: boolean): void => {
+    let valueEvent: Omit<HostValueEvent<TAgent>, 'intermediate'> | undefined;
 
     do {
       do {
@@ -179,15 +179,15 @@ export class Service<THook extends AnyHook> {
         }
 
         try {
-          active = this;
+          activeHost = this;
 
           valueEvent = {
             type: 'value',
-            value: this.#hook(...this.#args!),
+            value: this.#agent(...this.#args!),
             async,
           };
         } finally {
-          active = undefined;
+          activeHost = undefined;
         }
 
         this.#memory.reset();
