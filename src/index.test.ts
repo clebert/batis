@@ -16,17 +16,17 @@ describe('Host', () => {
 
     const createInitialState = jest.fn(() => (i += 1));
 
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [state1] = useState(arg);
       const [state2] = useState(createInitialState);
 
       return [state1, state2];
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     expect(events).toEqual([
       {type: 'value', value: ['a', 1], async: false, intermediate: false},
@@ -42,19 +42,19 @@ describe('Host', () => {
 
     const createInitialState = jest.fn(() => (i += 1));
 
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [state1] = useState(arg);
       const [state2] = useState(createInitialState);
 
       return [state1, state2];
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
     host.reset();
-    host.render(['c']);
+    host.render('c');
 
     expect(events).toEqual([
       {type: 'value', value: ['a', 1], async: false, intermediate: false},
@@ -72,7 +72,7 @@ describe('Host', () => {
 
     const createInitialState = jest.fn(() => (i += 1));
 
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [state1] = useState(arg);
       const [state2] = useState(createInitialState);
 
@@ -83,11 +83,11 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
-    host.render(['c']);
+    host.render('a');
+    host.render('b');
+    host.render('c');
 
     expect(events).toEqual([
       {type: 'value', value: ['a', 1], async: false, intermediate: false},
@@ -104,7 +104,7 @@ describe('Host', () => {
 
     const createInitialState = jest.fn(() => (i += 1));
 
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [state1, setState1] = useState(arg);
       const [state2] = useState(createInitialState);
 
@@ -119,14 +119,14 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     await new Promise((resolve) => setTimeout(resolve));
 
-    host.render(['c']);
+    host.render('c');
 
     expect(events).toEqual([
       {type: 'value', value: ['a', 1], async: false, intermediate: false},
@@ -171,9 +171,9 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render([]);
+    host.render();
 
     await new Promise((resolve) => setTimeout(resolve));
 
@@ -217,9 +217,9 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render([]);
+    host.render();
 
     await new Promise((resolve) => setTimeout(resolve));
 
@@ -231,7 +231,7 @@ describe('Host', () => {
   });
 
   test('setting an outdated state does not trigger a rendering', async () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [state, setState] = useState(arg);
 
       setTimeout(() => {
@@ -241,9 +241,9 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
+    host.render('a');
     host.reset();
 
     await new Promise((resolve) => setTimeout(resolve));
@@ -257,7 +257,7 @@ describe('Host', () => {
   });
 
   test('a failed setting of a state causes an error event', async () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [state, setState] = useState(() => {
         if (arg === 'a') {
           throw new Error(arg);
@@ -281,11 +281,11 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
-    host.render(['c']);
+    host.render('a');
+    host.render('b');
+    host.render('c');
 
     await new Promise((resolve) => setTimeout(resolve));
 
@@ -302,7 +302,7 @@ describe('Host', () => {
   test('the identity of a setState function is stable until a reset event occurs', () => {
     const setStateIdentities = new Set();
 
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [state, setState] = useState(arg);
 
       setStateIdentities.add(setState);
@@ -318,12 +318,12 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['c']);
+    host.render('a');
+    host.render('c');
     host.reset();
-    host.render(['c']);
+    host.render('c');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: true},
@@ -341,7 +341,7 @@ describe('Host', () => {
   test('the identity of a setState function is stable until an error event occurs', () => {
     const setStateIdentities = new Set();
 
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [state, setState] = useState(arg);
 
       setStateIdentities.add(setState);
@@ -361,10 +361,10 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['c']);
+    host.render('a');
+    host.render('c');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: true},
@@ -379,7 +379,7 @@ describe('Host', () => {
 
   test('an effect triggers if one of its dependencies changes', () => {
     const disposeEffect1 = jest.fn(() => {
-      throw new Error('1');
+      throw new Error('oops');
     });
 
     const disposeEffect3 = jest.fn();
@@ -387,7 +387,7 @@ describe('Host', () => {
     const effect2 = jest.fn();
     const effect3 = jest.fn(() => disposeEffect3);
 
-    const agent = jest.fn((arg1, arg2) => {
+    const agent = jest.fn((arg1: string, arg2: number) => {
       useEffect(effect1);
       useEffect(effect2, []);
       useEffect(effect3, [arg1, arg2]);
@@ -396,13 +396,13 @@ describe('Host', () => {
     });
 
     const consoleError = jest.spyOn(console, 'error');
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a', 'x']);
-    host.render(['a', 'x']);
-    host.render(['a', 'y']);
-    host.render(['b', 'y']);
-    host.render(['b', 'y']);
+    host.render('a', 0);
+    host.render('a', 0);
+    host.render('a', 1);
+    host.render('b', 1);
+    host.render('b', 1);
 
     expect(disposeEffect1).toHaveBeenCalledTimes(4);
     expect(disposeEffect3).toHaveBeenCalledTimes(2);
@@ -412,15 +412,15 @@ describe('Host', () => {
 
     expect(consoleError).toHaveBeenCalledWith(
       'Failed to dispose an effect.',
-      new Error('1')
+      new Error('oops')
     );
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 'x'], async: false, intermediate: false},
-      {type: 'value', value: ['a', 'x'], async: false, intermediate: false},
-      {type: 'value', value: ['a', 'y'], async: false, intermediate: false},
-      {type: 'value', value: ['b', 'y'], async: false, intermediate: false},
-      {type: 'value', value: ['b', 'y'], async: false, intermediate: false},
+      {type: 'value', value: ['a', 0], async: false, intermediate: false},
+      {type: 'value', value: ['a', 0], async: false, intermediate: false},
+      {type: 'value', value: ['a', 1], async: false, intermediate: false},
+      {type: 'value', value: ['b', 1], async: false, intermediate: false},
+      {type: 'value', value: ['b', 1], async: false, intermediate: false},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(5);
@@ -434,13 +434,13 @@ describe('Host', () => {
       useEffect(effect, []);
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render([]);
-    host.render([]);
+    host.render();
+    host.render();
     host.reset();
-    host.render([]);
-    host.render([]);
+    host.render();
+    host.render();
 
     expect(disposeEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
@@ -460,7 +460,7 @@ describe('Host', () => {
     const disposeEffect = jest.fn();
     const effect = jest.fn(() => disposeEffect);
 
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       useEffect(effect, []);
 
       if (arg === 'b') {
@@ -470,12 +470,12 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
-    host.render(['c']);
-    host.render(['d']);
+    host.render('a');
+    host.render('b');
+    host.render('c');
+    host.render('d');
 
     expect(disposeEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
@@ -494,7 +494,7 @@ describe('Host', () => {
     const disposeEffect = jest.fn();
     const effect = jest.fn(() => disposeEffect);
 
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const [, setState] = useState(arg);
 
       useEffect(effect, []);
@@ -510,15 +510,15 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     await new Promise((resolve) => setTimeout(resolve));
 
-    host.render(['c']);
-    host.render(['d']);
+    host.render('c');
+    host.render('d');
 
     expect(disposeEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
@@ -535,7 +535,7 @@ describe('Host', () => {
   });
 
   test('a failed triggering of an effect causes an error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       useEffect(() => {
         throw new Error(arg);
       }, []);
@@ -543,9 +543,9 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
+    host.render('a');
 
     expect(events).toEqual([
       {type: 'error', error: new Error('a'), async: false},
@@ -558,47 +558,47 @@ describe('Host', () => {
     const createValue1 = jest.fn();
     const createValue2 = jest.fn();
 
-    const agent = jest.fn((arg1, arg2) => {
+    const agent = jest.fn((arg1: string, arg2: number) => {
       useMemo(createValue1, []);
       useMemo(createValue2, [arg1, arg2]);
 
       return [arg1, arg2];
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a', 'x']);
-    host.render(['a', 'x']);
-    host.render(['a', 'y']);
-    host.render(['b', 'y']);
-    host.render(['b', 'y']);
+    host.render('a', 0);
+    host.render('a', 0);
+    host.render('a', 1);
+    host.render('b', 1);
+    host.render('b', 1);
 
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(3);
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 'x'], async: false, intermediate: false},
-      {type: 'value', value: ['a', 'x'], async: false, intermediate: false},
-      {type: 'value', value: ['a', 'y'], async: false, intermediate: false},
-      {type: 'value', value: ['b', 'y'], async: false, intermediate: false},
-      {type: 'value', value: ['b', 'y'], async: false, intermediate: false},
+      {type: 'value', value: ['a', 0], async: false, intermediate: false},
+      {type: 'value', value: ['a', 0], async: false, intermediate: false},
+      {type: 'value', value: ['a', 1], async: false, intermediate: false},
+      {type: 'value', value: ['b', 1], async: false, intermediate: false},
+      {type: 'value', value: ['b', 1], async: false, intermediate: false},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(5);
   });
 
   test('a memoized value is recomputed after a reset event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       return useMemo(() => arg, []);
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
     host.reset();
-    host.render(['c']);
-    host.render(['d']);
+    host.render('c');
+    host.render('d');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -612,7 +612,7 @@ describe('Host', () => {
   });
 
   test('a memoized value is recomputed after a synchronous error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const value = useMemo(() => arg, []);
 
       if (arg === 'c') {
@@ -622,13 +622,13 @@ describe('Host', () => {
       return value;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
-    host.render(['c']);
-    host.render(['d']);
-    host.render(['e']);
+    host.render('a');
+    host.render('b');
+    host.render('c');
+    host.render('d');
+    host.render('e');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -642,7 +642,7 @@ describe('Host', () => {
   });
 
   test('a memoized value is recomputed after an asynchronous error event', async () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       const value = useMemo(() => arg, []);
       const [, setState] = useState(arg);
 
@@ -657,15 +657,15 @@ describe('Host', () => {
       return value;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     await new Promise((resolve) => setTimeout(resolve));
 
-    host.render(['c']);
-    host.render(['d']);
+    host.render('c');
+    host.render('d');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -679,10 +679,14 @@ describe('Host', () => {
   });
 
   test('a memoized callback changes if one of its dependencies changes', () => {
-    const agent = jest.fn((callback1, callback2, arg1, arg2) => [
-      useCallback(callback1, []),
-      useCallback(callback2, [arg1, arg2]),
-    ]);
+    const agent = jest.fn(
+      (
+        callback1: jest.Mock,
+        callback2: jest.Mock,
+        arg1: string,
+        arg2: number
+      ) => [useCallback(callback1, []), useCallback(callback2, [arg1, arg2])]
+    );
 
     const callbackA = jest.fn();
     const callbackB = jest.fn();
@@ -695,13 +699,13 @@ describe('Host', () => {
     const callbackI = jest.fn();
     const callbackJ = jest.fn();
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render([callbackA, callbackB, 'a', 'x']);
-    host.render([callbackC, callbackD, 'a', 'x']);
-    host.render([callbackE, callbackF, 'a', 'y']);
-    host.render([callbackG, callbackH, 'b', 'y']);
-    host.render([callbackI, callbackJ, 'b', 'y']);
+    host.render(callbackA, callbackB, 'a', 0);
+    host.render(callbackC, callbackD, 'a', 0);
+    host.render(callbackE, callbackF, 'a', 1);
+    host.render(callbackG, callbackH, 'b', 1);
+    host.render(callbackI, callbackJ, 'b', 1);
 
     expect(events).toEqual([
       {
@@ -742,32 +746,32 @@ describe('Host', () => {
   test('a ref object is stable and mutable', () => {
     const agent = jest.fn(() => {
       const ref1 = useRef('a');
-      const ref2 = useRef('x');
+      const ref2 = useRef(0);
 
       useEffect(() => {
-        ref2.current = 'y';
+        ref2.current = 1;
       }, []);
 
       return [ref1.current, ref2.current];
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render([]);
-    host.render([]);
-    host.render([]);
+    host.render();
+    host.render();
+    host.render();
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 'x'], async: false, intermediate: false},
-      {type: 'value', value: ['a', 'y'], async: false, intermediate: false},
-      {type: 'value', value: ['a', 'y'], async: false, intermediate: false},
+      {type: 'value', value: ['a', 0], async: false, intermediate: false},
+      {type: 'value', value: ['a', 1], async: false, intermediate: false},
+      {type: 'value', value: ['a', 1], async: false, intermediate: false},
     ]);
 
     expect(agent).toBeCalledTimes(3);
   });
 
   test('using fewer subagents causes an error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       if (arg === 'a') {
         useState('a');
         useState('b');
@@ -778,10 +782,10 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -796,7 +800,7 @@ describe('Host', () => {
   });
 
   test('using more subagents causes an error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       if (arg === 'a') {
         useState('a');
       } else {
@@ -807,10 +811,10 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -825,7 +829,7 @@ describe('Host', () => {
   });
 
   test('changing the order of the subagents used causes an error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       if (arg === 'a') {
         useState('a');
       } else {
@@ -835,10 +839,10 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -853,7 +857,7 @@ describe('Host', () => {
   });
 
   test('removing the dependencies of a subagent causes an error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       if (arg === 'a') {
         useEffect(jest.fn(), []);
       } else {
@@ -863,10 +867,10 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -883,7 +887,7 @@ describe('Host', () => {
   });
 
   test('adding the dependencies of a subagent causes an error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       if (arg === 'a') {
         useEffect(jest.fn());
       } else {
@@ -893,10 +897,10 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -913,7 +917,7 @@ describe('Host', () => {
   });
 
   test('removing a single dependency of a subagent causes an error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       if (arg === 'a') {
         useEffect(jest.fn(), [1, 0]);
       } else {
@@ -923,10 +927,10 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -943,7 +947,7 @@ describe('Host', () => {
   });
 
   test('adding a single dependency of a subagent causes an error event', () => {
-    const agent = jest.fn((arg) => {
+    const agent = jest.fn((arg: string) => {
       if (arg === 'a') {
         useEffect(jest.fn(), [1]);
       } else {
@@ -953,10 +957,10 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host(agent, listener);
+    const host = new Host<typeof agent>(agent, listener);
 
-    host.render(['a']);
-    host.render(['b']);
+    host.render('a');
+    host.render('b');
 
     expect(events).toEqual([
       {type: 'value', value: 'a', async: false, intermediate: false},
@@ -979,27 +983,27 @@ describe('Host', () => {
       return state;
     };
 
-    const agent2 = (arg: string) => {
+    const agent2 = (arg: number) => {
       const [state] = useState(arg);
 
       return state;
     };
 
-    const host1 = new Host(agent1, listener);
-    const host2 = new Host(agent2, listener);
+    const host1 = new Host<typeof agent1>(agent1, listener);
+    const host2 = new Host<typeof agent2>(agent2, listener);
 
-    host1.render(['a1']);
-    host2.render(['a2']);
+    host1.render('a');
+    host2.render(0);
     host1.reset();
-    host1.render(['b1']);
-    host2.render(['b2']);
+    host1.render('b');
+    host2.render(1);
 
     expect(events).toEqual([
-      {type: 'value', value: 'a1', async: false, intermediate: false},
-      {type: 'value', value: 'a2', async: false, intermediate: false},
+      {type: 'value', value: 'a', async: false, intermediate: false},
+      {type: 'value', value: 0, async: false, intermediate: false},
       {type: 'reset'},
-      {type: 'value', value: 'b1', async: false, intermediate: false},
-      {type: 'value', value: 'a2', async: false, intermediate: false},
+      {type: 'value', value: 'b', async: false, intermediate: false},
+      {type: 'value', value: 0, async: false, intermediate: false},
     ]);
   });
 });

@@ -142,7 +142,7 @@ export class Host<TAgent extends AnyAgent> {
     this.#listener = listener;
   }
 
-  render(args: Parameters<TAgent>): void {
+  render(...args: Parameters<TAgent>): void {
     this.#args = args;
 
     try {

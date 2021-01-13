@@ -28,7 +28,7 @@ npm install batis --save
 ## Rationale
 
 Even though [React Hooks](https://reactjs.org/docs/hooks-intro.html) are
-actually a constrained solution for managing state and effects in functional
+actually a constrained solution for using state and side effects in functional
 stateless components, they have proven to be very elegant in their design. In my
 opinion, they are particularly suitable for modeling finite-state automata. I
 wanted to use this type of reactive programming in areas other than web UI
@@ -47,8 +47,8 @@ functional stateless component.**
 
 An agent is comparable to a biological virus. A virus is dependent on a host
 cell because it has no metabolism of its own. So, to use a functional stateless
-agent, you need a host. A host manages the state and effects of an agent and
-sends events to a listener function.
+agent, you need a host. A host manages the state and side effects of an agent
+and sends events to a listener function.
 
 ## Usage example
 
@@ -81,11 +81,11 @@ function useGreeting(salutation) {
 const events = [];
 const greeting = new Host(useGreeting, events.push.bind(events));
 
-greeting.render(['Hello']);
-greeting.render(['Hi']);
+greeting.render('Hello');
+greeting.render('Hi');
 greeting.reset();
-greeting.render(['Hey']);
-greeting.render(['Yo']);
+greeting.render('Hey');
+greeting.render('Yo');
 ```
 
 ```js
@@ -227,7 +227,7 @@ class Host<TAgent extends AnyAgent> {
 
   constructor(agent: TAgent, listener: HostListener<TAgent>);
 
-  render(args: Parameters<TAgent>): void;
+  render(...args: Parameters<TAgent>): void;
   reset(): void;
 }
 ```
