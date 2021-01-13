@@ -67,10 +67,12 @@ wrote Batis...
 ```js
 import {Service} from 'batis';
 
-function useGreeting(salutation) {
-  const [name, setName] = Service.useState('John Doe');
+const {useEffect, useMemo, useState} = Service;
 
-  Service.useEffect(() => {
+function useGreeting(salutation) {
+  const [name, setName] = useState('John Doe');
+
+  useEffect(() => {
     if (name === 'John Doe') {
       setName('Jane Doe');
     }
@@ -80,7 +82,7 @@ function useGreeting(salutation) {
     return () => clearTimeout(timeoutId);
   }, [name]);
 
-  return Service.useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
+  return useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
 }
 
 const greeting = new Service(useGreeting, console.log);

@@ -1,11 +1,12 @@
 // @ts-check
 
 const {Service} = require('./lib/cjs');
+const {useEffect, useMemo, useState} = Service;
 
 function useGreeting(salutation) {
-  const [name, setName] = Service.useState('John Doe');
+  const [name, setName] = useState('John Doe');
 
-  Service.useEffect(() => {
+  useEffect(() => {
     if (name === 'John Doe') {
       setName('Jane Doe');
     }
@@ -15,7 +16,7 @@ function useGreeting(salutation) {
     return () => clearTimeout(timeoutId);
   }, [name]);
 
-  return Service.useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
+  return useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
 }
 
 const greeting = new Service(useGreeting, console.log);
