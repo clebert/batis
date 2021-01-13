@@ -15,7 +15,7 @@ export {CreateState, DisposeEffect, Effect, SetState};
 
 export type AnyAgent = (...args: any[]) => any;
 
-export type HostListener<TAgent extends AnyAgent> = (
+export type HostEventListener<TAgent extends AnyAgent> = (
   event: HostEvent<TAgent>
 ) => void;
 
@@ -133,13 +133,13 @@ export class Host<TAgent extends AnyAgent> {
 
   readonly #memory = new Memory();
   readonly #agent: TAgent;
-  readonly #listener: HostListener<TAgent>;
+  readonly #eventListener: HostEventListener<TAgent>;
 
   #args: Parameters<TAgent> | undefined;
 
-  constructor(agent: TAgent, listener: HostListener<TAgent>) {
+  constructor(agent: TAgent, eventListener: HostEventListener<TAgent>) {
     this.#agent = agent;
-    this.#listener = listener;
+    this.#eventListener = eventListener;
   }
 
   render(...args: Parameters<TAgent>): void {
@@ -149,13 +149,13 @@ export class Host<TAgent extends AnyAgent> {
       this.#render(false);
     } catch (error: unknown) {
       this.#memory.reset(true);
-      this.#listener({type: 'error', error, async: false});
+      this.#eventListener({type: 'error', error, async: false});
     }
   }
 
   reset(): void {
     this.#memory.reset(true);
-    this.#listener({type: 'reset'});
+    this.#eventListener({type: 'reset'});
   }
 
   readonly #renderAsync = (): void => {
@@ -165,7 +165,7 @@ export class Host<TAgent extends AnyAgent> {
       }
     } catch (error: unknown) {
       this.#memory.reset(true);
-      this.#listener({type: 'error', error, async: true});
+      this.#eventListener({type: 'error', error, async: true});
     }
   };
 
@@ -175,7 +175,7 @@ export class Host<TAgent extends AnyAgent> {
     do {
       do {
         if (valueEvent) {
-          this.#listener({...valueEvent, intermediate: true});
+          this.#eventListener({...valueEvent, intermediate: true});
         }
 
         try {
@@ -196,6 +196,6 @@ export class Host<TAgent extends AnyAgent> {
       this.#memory.triggerEffects();
     } while (this.#memory.applyStateChanges());
 
-    this.#listener({...valueEvent, intermediate: false});
+    this.#eventListener({...valueEvent, intermediate: false});
   };
 }

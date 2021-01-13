@@ -48,7 +48,7 @@ functional stateless component.**
 An agent is comparable to a biological virus. A virus is dependent on a host
 cell because it has no metabolism of its own. So, to use a functional stateless
 agent, you need a host. A host manages the state and side effects of an agent
-and sends events to a listener function.
+and emits events.
 
 ## Usage example
 
@@ -108,6 +108,13 @@ setTimeout(() => {
   console.log('OK');
 });
 ```
+
+**Note:** The API of the `Host` class, which allows to pass a single event
+listener, may not be very convenient to use. However, I wanted to create an API
+that was as minimalistic and opinion-free as possible. Higher abstraction
+concepts can be built using this API. The events provide all the necessary
+metadata. For example, it would be possible to implement an API based on async
+iterators.
 
 ### Testing React/Preact Hooks
 
@@ -225,7 +232,7 @@ class Host<TAgent extends AnyAgent> {
     current: TValue;
   };
 
-  constructor(agent: TAgent, listener: HostListener<TAgent>);
+  constructor(agent: TAgent, eventListener: HostEventListener<TAgent>);
 
   render(...args: Parameters<TAgent>): void;
   reset(): void;
@@ -237,7 +244,9 @@ type AnyAgent = (...args: any[]) => any;
 ```
 
 ```ts
-type HostListener<TAgent extends AnyAgent> = (event: HostEvent<TAgent>) => void;
+type HostEventListener<TAgent extends AnyAgent> = (
+  event: HostEvent<TAgent>
+) => void;
 ```
 
 ```ts

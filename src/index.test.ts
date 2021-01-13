@@ -1,14 +1,14 @@
-import {AnyAgent, Host, HostEvent, HostListener} from '.';
+import {AnyAgent, Host, HostEvent, HostEventListener} from '.';
 
 const {useCallback, useEffect, useMemo, useRef, useState} = Host;
 
 describe('Host', () => {
   let events: HostEvent<AnyAgent>[];
-  let listener: HostListener<AnyAgent>;
+  let eventListener: HostEventListener<AnyAgent>;
 
   beforeEach(() => {
     events = [];
-    listener = events.push.bind(events);
+    eventListener = events.push.bind(events);
   });
 
   test('an initial state is set only once', () => {
@@ -23,7 +23,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -49,7 +49,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -83,7 +83,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -119,7 +119,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -171,7 +171,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render();
 
@@ -217,7 +217,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render();
 
@@ -241,7 +241,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.reset();
@@ -281,7 +281,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -318,7 +318,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('c');
@@ -361,7 +361,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('c');
@@ -396,7 +396,7 @@ describe('Host', () => {
     });
 
     const consoleError = jest.spyOn(console, 'error');
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a', 0);
     host.render('a', 0);
@@ -434,7 +434,7 @@ describe('Host', () => {
       useEffect(effect, []);
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render();
     host.render();
@@ -470,7 +470,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -510,7 +510,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -543,7 +543,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
 
@@ -565,7 +565,7 @@ describe('Host', () => {
       return [arg1, arg2];
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a', 0);
     host.render('a', 0);
@@ -592,7 +592,7 @@ describe('Host', () => {
       return useMemo(() => arg, []);
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -622,7 +622,7 @@ describe('Host', () => {
       return value;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -657,7 +657,7 @@ describe('Host', () => {
       return value;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -699,7 +699,7 @@ describe('Host', () => {
     const callbackI = jest.fn();
     const callbackJ = jest.fn();
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render(callbackA, callbackB, 'a', 0);
     host.render(callbackC, callbackD, 'a', 0);
@@ -755,7 +755,7 @@ describe('Host', () => {
       return [ref1.current, ref2.current];
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render();
     host.render();
@@ -782,7 +782,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -811,7 +811,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -839,7 +839,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -867,7 +867,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -897,7 +897,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -927,7 +927,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -957,7 +957,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof agent>(agent, listener);
+    const host = new Host<typeof agent>(agent, eventListener);
 
     host.render('a');
     host.render('b');
@@ -989,8 +989,8 @@ describe('Host', () => {
       return state;
     };
 
-    const host1 = new Host<typeof agent1>(agent1, listener);
-    const host2 = new Host<typeof agent2>(agent2, listener);
+    const host1 = new Host<typeof agent1>(agent1, eventListener);
+    const host2 = new Host<typeof agent2>(agent2, eventListener);
 
     host1.render('a');
     host2.render(0);
