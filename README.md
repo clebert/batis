@@ -254,7 +254,8 @@ type DisposeEffect = () => void;
 
 ## Development
 
-### Publishing a new release
+<details>
+  <summary>Publishing a new release</summary>
 
 ```
 npm run release patch
@@ -270,6 +271,8 @@ npm run release major
 
 After a new release has been created by pushing the tag, it must be published
 via the GitHub UI. This triggers the final publication to npm.
+
+</details>
 
 ---
 
