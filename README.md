@@ -34,6 +34,10 @@ my opinion, they are particularly suitable for modeling finite-state automata. I
 wanted to use this kind of reactive programming in other areas as well.
 Therefore I wrote Batis...
 
+**Note:** With [Loxia](https://github.com/clebert/loxia), I try to shed more
+light on the modeling of finite-state automata using Batis agents or React
+Hooks.
+
 ## Terminology
 
 There are two main entities in this library, hosts and agents.
