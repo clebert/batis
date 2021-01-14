@@ -235,6 +235,11 @@ class Host<TAgent extends AnyAgent> {
   constructor(agent: TAgent, eventListener: HostEventListener<TAgent>);
 
   render(...args: Parameters<TAgent>): void;
+
+  /**
+   * Reset the state and clean up the side effects.
+   * The next rendering will start from scratch.
+   */
   reset(): void;
 }
 ```
@@ -262,10 +267,18 @@ interface HostValueEvent<TAgent extends AnyAgent> {
   readonly intermediate: boolean;
 }
 
+/**
+ * The host has lost its state and the side effects have been cleaned up.
+ * The next rendering will start from scratch.
+ */
 interface HostResetEvent {
   readonly type: 'reset';
 }
 
+/**
+ * The host has lost its state and the side effects have been cleaned up.
+ * The next rendering will start from scratch.
+ */
 interface HostErrorEvent {
   readonly type: 'error';
   readonly error: unknown;
@@ -279,8 +292,8 @@ type CreateState<TState> = (previousState: TState) => TState;
 ```
 
 ```ts
-type Effect = () => DisposeEffect | void;
-type DisposeEffect = () => void;
+type Effect = () => CleanUpEffect | void;
+type CleanUpEffect = () => void;
 ```
 
 ## Development

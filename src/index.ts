@@ -1,8 +1,8 @@
 import {areDependenciesEqual} from './are-dependencies-equal';
 import {isFunction} from './is-function';
 import {
+  CleanUpEffect,
   CreateState,
-  DisposeEffect,
   Effect,
   EffectMemoryCell,
   MemoMemoryCell,
@@ -11,7 +11,7 @@ import {
   StateMemoryCell,
 } from './memory';
 
-export {CreateState, DisposeEffect, Effect, SetState};
+export {CleanUpEffect, CreateState, Effect, SetState};
 
 export type AnyAgent = (...args: any[]) => any;
 
@@ -31,10 +31,18 @@ export interface HostValueEvent<TAgent extends AnyAgent> {
   readonly intermediate: boolean;
 }
 
+/**
+ * The host has lost its state and the side effects have been cleaned up.
+ * The next rendering will start from scratch.
+ */
 export interface HostResetEvent {
   readonly type: 'reset';
 }
 
+/**
+ * The host has lost its state and the side effects have been cleaned up.
+ * The next rendering will start from scratch.
+ */
 export interface HostErrorEvent {
   readonly type: 'error';
   readonly error: unknown;
@@ -153,6 +161,10 @@ export class Host<TAgent extends AnyAgent> {
     }
   }
 
+  /**
+   * Reset the state and clean up the side effects.
+   * The next rendering will start from scratch.
+   */
   reset(): void {
     this.#memory.reset(true);
     this.#eventListener({type: 'reset'});

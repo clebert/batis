@@ -378,14 +378,14 @@ describe('Host', () => {
   });
 
   test('an effect triggers if one of its dependencies changes', () => {
-    const disposeEffect1 = jest.fn(() => {
+    const cleanUpEffect1 = jest.fn(() => {
       throw new Error('oops');
     });
 
-    const disposeEffect3 = jest.fn();
-    const effect1 = jest.fn(() => disposeEffect1);
+    const cleanUpEffect3 = jest.fn();
+    const effect1 = jest.fn(() => cleanUpEffect1);
     const effect2 = jest.fn();
-    const effect3 = jest.fn(() => disposeEffect3);
+    const effect3 = jest.fn(() => cleanUpEffect3);
 
     const agent = jest.fn((arg1: string, arg2: number) => {
       useEffect(effect1);
@@ -404,14 +404,14 @@ describe('Host', () => {
     host.render('b', 1);
     host.render('b', 1);
 
-    expect(disposeEffect1).toHaveBeenCalledTimes(4);
-    expect(disposeEffect3).toHaveBeenCalledTimes(2);
+    expect(cleanUpEffect1).toHaveBeenCalledTimes(4);
+    expect(cleanUpEffect3).toHaveBeenCalledTimes(2);
     expect(effect1).toHaveBeenCalledTimes(5);
     expect(effect2).toHaveBeenCalledTimes(1);
     expect(effect3).toHaveBeenCalledTimes(3);
 
     expect(consoleError).toHaveBeenCalledWith(
-      'Failed to dispose an effect.',
+      'An effect could not be cleaned up.',
       new Error('oops')
     );
 
@@ -427,8 +427,8 @@ describe('Host', () => {
   });
 
   test('an effect retriggers after a reset event', () => {
-    const disposeEffect = jest.fn();
-    const effect = jest.fn(() => disposeEffect);
+    const cleanUpEffect = jest.fn();
+    const effect = jest.fn(() => cleanUpEffect);
 
     const agent = jest.fn(() => {
       useEffect(effect, []);
@@ -442,7 +442,7 @@ describe('Host', () => {
     host.render();
     host.render();
 
-    expect(disposeEffect).toHaveBeenCalledTimes(1);
+    expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
@@ -457,8 +457,8 @@ describe('Host', () => {
   });
 
   test('an effect retriggers after a synchronous error event', () => {
-    const disposeEffect = jest.fn();
-    const effect = jest.fn(() => disposeEffect);
+    const cleanUpEffect = jest.fn();
+    const effect = jest.fn(() => cleanUpEffect);
 
     const agent = jest.fn((arg: string) => {
       useEffect(effect, []);
@@ -477,7 +477,7 @@ describe('Host', () => {
     host.render('c');
     host.render('d');
 
-    expect(disposeEffect).toHaveBeenCalledTimes(1);
+    expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
@@ -491,8 +491,8 @@ describe('Host', () => {
   });
 
   test('an effect retriggers after an asynchronous error event', async () => {
-    const disposeEffect = jest.fn();
-    const effect = jest.fn(() => disposeEffect);
+    const cleanUpEffect = jest.fn();
+    const effect = jest.fn(() => cleanUpEffect);
 
     const agent = jest.fn((arg: string) => {
       const [, setState] = useState(arg);
@@ -520,7 +520,7 @@ describe('Host', () => {
     host.render('c');
     host.render('d');
 
-    expect(disposeEffect).toHaveBeenCalledTimes(1);
+    expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([

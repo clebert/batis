@@ -12,11 +12,11 @@ export interface EffectMemoryCell {
   outdated: boolean;
   effect: Effect;
   dependencies: readonly unknown[] | undefined;
-  disposeEffect?: DisposeEffect;
+  cleanUpEffect?: CleanUpEffect;
 }
 
-export type Effect = () => DisposeEffect | void;
-export type DisposeEffect = () => void;
+export type Effect = () => CleanUpEffect | void;
+export type CleanUpEffect = () => void;
 
 export interface StateMemoryCell<TState> {
   readonly type: 'state';
@@ -43,7 +43,7 @@ export class Memory {
 
   reset(hard: boolean = false): void {
     if (hard) {
-      this.#disposeEffects(true);
+      this.#cleanUpEffects(true);
 
       this.#memoryCells = [];
     } else if (this.#pointer !== this.#memoryCells.length) {
@@ -103,29 +103,29 @@ export class Memory {
   }
 
   triggerEffects(): void {
-    this.#disposeEffects();
+    this.#cleanUpEffects();
 
     for (const memoryCell of this.#memoryCells) {
       if (isTypeOf<EffectMemoryCell>('effect', memoryCell)) {
         if (memoryCell.outdated) {
           memoryCell.outdated = false;
-          memoryCell.disposeEffect = memoryCell.effect() || undefined;
+          memoryCell.cleanUpEffect = memoryCell.effect() || undefined;
         }
       }
     }
   }
 
-  readonly #disposeEffects = (force: boolean = false): void => {
+  readonly #cleanUpEffects = (force: boolean = false): void => {
     for (const memoryCell of this.#memoryCells) {
       if (isTypeOf<EffectMemoryCell>('effect', memoryCell)) {
-        if ((memoryCell.outdated || force) && memoryCell.disposeEffect) {
+        if ((memoryCell.outdated || force) && memoryCell.cleanUpEffect) {
           try {
-            memoryCell.disposeEffect();
+            memoryCell.cleanUpEffect();
           } catch (error) {
-            console.error('Failed to dispose an effect.', error);
+            console.error('An effect could not be cleaned up.', error);
           }
 
-          memoryCell.disposeEffect = undefined;
+          memoryCell.cleanUpEffect = undefined;
         }
       }
     }
