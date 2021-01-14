@@ -29,8 +29,8 @@ describe('Host', () => {
     host.render('b');
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
+      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['a', 1]},
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(1);
@@ -57,10 +57,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
+      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['a', 1]},
       {type: 'reset'},
-      {type: 'value', value: ['c', 2], async: false, intermediate: false},
+      {type: 'rendering', result: ['c', 2]},
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -90,9 +90,9 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
-      {type: 'error', error: new Error('b'), async: false},
-      {type: 'value', value: ['c', 2], async: false, intermediate: false},
+      {type: 'rendering', result: ['a', 1]},
+      {type: 'error', reason: new Error('b')},
+      {type: 'rendering', result: ['c', 2]},
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -129,10 +129,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
-      {type: 'error', error: new Error('b'), async: true},
-      {type: 'value', value: ['c', 2], async: false, intermediate: false},
+      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['a', 1]},
+      {type: 'error', reason: new Error('b'), async: true},
+      {type: 'rendering', result: ['c', 2]},
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -178,12 +178,30 @@ describe('Host', () => {
     await new Promise((resolve) => setTimeout(resolve));
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 0], async: false, intermediate: true},
-      {type: 'value', value: ['b', 2], async: false, intermediate: true},
-      {type: 'value', value: ['c', 4], async: false, intermediate: false},
-      {type: 'value', value: ['d', 6], async: true, intermediate: true},
-      {type: 'value', value: ['e', 8], async: true, intermediate: false},
+      {type: 'rendering', result: ['a', 0], interim: true},
+      {type: 'rendering', result: ['b', 2], interim: true},
+      {type: 'rendering', result: ['c', 4]},
+      {type: 'rendering', result: ['d', 6], async: true, interim: true},
+      {type: 'rendering', result: ['e', 8], async: true},
     ]);
+
+    /*
+    Note: In React, asynchronous state changes are not yet applied in batches.
+
+    https://github.com/facebook/react/issues/15027
+
+    In that case, the recorded events would be expected as follows:
+
+    expect(events).toEqual([
+      {type: 'rendering', result: ['a', 0], interim: true},
+      {type: 'rendering', result: ['b', 2], interim: true},
+      {type: 'rendering', result: ['c', 4]},
+      {type: 'rendering', result: ['d', 4], async: true, interim: true},
+      {type: 'rendering', result: ['e', 6], async: true},
+      {type: 'rendering', result: ['e', 7], async: true},
+      {type: 'rendering', result: ['e', 8], async: true},
+    ]);
+    */
 
     expect(agent).toHaveBeenCalledTimes(5);
   });
@@ -223,9 +241,7 @@ describe('Host', () => {
 
     await new Promise((resolve) => setTimeout(resolve));
 
-    expect(events).toEqual([
-      {type: 'value', value: ['a', 0], async: false, intermediate: false},
-    ]);
+    expect(events).toEqual([{type: 'rendering', result: ['a', 0]}]);
 
     expect(agent).toHaveBeenCalledTimes(1);
   });
@@ -248,10 +264,7 @@ describe('Host', () => {
 
     await new Promise((resolve) => setTimeout(resolve));
 
-    expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'reset'},
-    ]);
+    expect(events).toEqual([{type: 'rendering', result: 'a'}, {type: 'reset'}]);
 
     expect(agent).toHaveBeenCalledTimes(1);
   });
@@ -290,10 +303,10 @@ describe('Host', () => {
     await new Promise((resolve) => setTimeout(resolve));
 
     expect(events).toEqual([
-      {type: 'error', error: new Error('a'), async: false},
-      {type: 'error', error: new Error('b'), async: false},
-      {type: 'value', value: 'c', async: false, intermediate: false},
-      {type: 'error', error: new Error('c'), async: true},
+      {type: 'error', reason: new Error('a')},
+      {type: 'error', reason: new Error('b')},
+      {type: 'rendering', result: 'c'},
+      {type: 'error', reason: new Error('c'), async: true},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(3);
@@ -326,12 +339,12 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: true},
-      {type: 'value', value: 'b', async: false, intermediate: false},
-      {type: 'value', value: 'b', async: false, intermediate: false},
+      {type: 'rendering', result: 'a', interim: true},
+      {type: 'rendering', result: 'b'},
+      {type: 'rendering', result: 'b'},
       {type: 'reset'},
-      {type: 'value', value: 'c', async: false, intermediate: true},
-      {type: 'value', value: 'd', async: false, intermediate: false},
+      {type: 'rendering', result: 'c', interim: true},
+      {type: 'rendering', result: 'd'},
     ]);
 
     expect(setStateIdentities.size).toBe(2);
@@ -367,10 +380,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: true},
-      {type: 'error', error: new Error('b'), async: false},
-      {type: 'value', value: 'c', async: false, intermediate: true},
-      {type: 'value', value: 'd', async: false, intermediate: false},
+      {type: 'rendering', result: 'a', interim: true},
+      {type: 'error', reason: new Error('b')},
+      {type: 'rendering', result: 'c', interim: true},
+      {type: 'rendering', result: 'd'},
     ]);
 
     expect(setStateIdentities.size).toBe(2);
@@ -416,11 +429,11 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 0], async: false, intermediate: false},
-      {type: 'value', value: ['a', 0], async: false, intermediate: false},
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
-      {type: 'value', value: ['b', 1], async: false, intermediate: false},
-      {type: 'value', value: ['b', 1], async: false, intermediate: false},
+      {type: 'rendering', result: ['a', 0]},
+      {type: 'rendering', result: ['a', 0]},
+      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['b', 1]},
+      {type: 'rendering', result: ['b', 1]},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(5);
@@ -446,11 +459,11 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'value', value: undefined, async: false, intermediate: false},
-      {type: 'value', value: undefined, async: false, intermediate: false},
+      {type: 'rendering', result: undefined},
+      {type: 'rendering', result: undefined},
       {type: 'reset'},
-      {type: 'value', value: undefined, async: false, intermediate: false},
-      {type: 'value', value: undefined, async: false, intermediate: false},
+      {type: 'rendering', result: undefined},
+      {type: 'rendering', result: undefined},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(4);
@@ -481,10 +494,10 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'error', error: new Error('b'), async: false},
-      {type: 'value', value: 'c', async: false, intermediate: false},
-      {type: 'value', value: 'd', async: false, intermediate: false},
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason: new Error('b')},
+      {type: 'rendering', result: 'c'},
+      {type: 'rendering', result: 'd'},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(4);
@@ -524,11 +537,11 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'value', value: 'b', async: false, intermediate: false},
-      {type: 'error', error: new Error('b'), async: true},
-      {type: 'value', value: 'c', async: false, intermediate: false},
-      {type: 'value', value: 'd', async: false, intermediate: false},
+      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'b'},
+      {type: 'error', reason: new Error('b'), async: true},
+      {type: 'rendering', result: 'c'},
+      {type: 'rendering', result: 'd'},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(4);
@@ -547,9 +560,7 @@ describe('Host', () => {
 
     host.render('a');
 
-    expect(events).toEqual([
-      {type: 'error', error: new Error('a'), async: false},
-    ]);
+    expect(events).toEqual([{type: 'error', reason: new Error('a')}]);
 
     expect(agent).toHaveBeenCalledTimes(1);
   });
@@ -577,11 +588,11 @@ describe('Host', () => {
     expect(createValue2).toHaveBeenCalledTimes(3);
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 0], async: false, intermediate: false},
-      {type: 'value', value: ['a', 0], async: false, intermediate: false},
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
-      {type: 'value', value: ['b', 1], async: false, intermediate: false},
-      {type: 'value', value: ['b', 1], async: false, intermediate: false},
+      {type: 'rendering', result: ['a', 0]},
+      {type: 'rendering', result: ['a', 0]},
+      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['b', 1]},
+      {type: 'rendering', result: ['b', 1]},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(5);
@@ -601,11 +612,11 @@ describe('Host', () => {
     host.render('d');
 
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'value', value: 'a', async: false, intermediate: false},
+      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a'},
       {type: 'reset'},
-      {type: 'value', value: 'c', async: false, intermediate: false},
-      {type: 'value', value: 'c', async: false, intermediate: false},
+      {type: 'rendering', result: 'c'},
+      {type: 'rendering', result: 'c'},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(4);
@@ -631,11 +642,11 @@ describe('Host', () => {
     host.render('e');
 
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'error', error: new Error('c'), async: false},
-      {type: 'value', value: 'd', async: false, intermediate: false},
-      {type: 'value', value: 'd', async: false, intermediate: false},
+      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason: new Error('c')},
+      {type: 'rendering', result: 'd'},
+      {type: 'rendering', result: 'd'},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(5);
@@ -668,11 +679,11 @@ describe('Host', () => {
     host.render('d');
 
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'error', error: new Error('b'), async: true},
-      {type: 'value', value: 'c', async: false, intermediate: false},
-      {type: 'value', value: 'c', async: false, intermediate: false},
+      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason: new Error('b'), async: true},
+      {type: 'rendering', result: 'c'},
+      {type: 'rendering', result: 'c'},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(4);
@@ -708,36 +719,11 @@ describe('Host', () => {
     host.render(callbackI, callbackJ, 'b', 1);
 
     expect(events).toEqual([
-      {
-        type: 'value',
-        value: [callbackA, callbackB],
-        async: false,
-        intermediate: false,
-      },
-      {
-        type: 'value',
-        value: [callbackA, callbackB],
-        async: false,
-        intermediate: false,
-      },
-      {
-        type: 'value',
-        value: [callbackA, callbackF],
-        async: false,
-        intermediate: false,
-      },
-      {
-        type: 'value',
-        value: [callbackA, callbackH],
-        async: false,
-        intermediate: false,
-      },
-      {
-        type: 'value',
-        value: [callbackA, callbackH],
-        async: false,
-        intermediate: false,
-      },
+      {type: 'rendering', result: [callbackA, callbackB]},
+      {type: 'rendering', result: [callbackA, callbackB]},
+      {type: 'rendering', result: [callbackA, callbackF]},
+      {type: 'rendering', result: [callbackA, callbackH]},
+      {type: 'rendering', result: [callbackA, callbackH]},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(5);
@@ -762,9 +748,9 @@ describe('Host', () => {
     host.render();
 
     expect(events).toEqual([
-      {type: 'value', value: ['a', 0], async: false, intermediate: false},
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
-      {type: 'value', value: ['a', 1], async: false, intermediate: false},
+      {type: 'rendering', result: ['a', 0]},
+      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['a', 1]},
     ]);
 
     expect(agent).toBeCalledTimes(3);
@@ -787,13 +773,11 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
+    const reason = new Error('The number of subagents used must not change.');
+
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {
-        type: 'error',
-        error: new Error('The number of subagents used must not change.'),
-        async: false,
-      },
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(2);
@@ -816,13 +800,11 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
+    const reason = new Error('The number of subagents used must not change.');
+
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {
-        type: 'error',
-        error: new Error('The number of subagents used must not change.'),
-        async: false,
-      },
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(2);
@@ -844,13 +826,13 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
+    const reason = new Error(
+      'The order of the subagents used must not change.'
+    );
+
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {
-        type: 'error',
-        error: new Error('The order of the subagents used must not change.'),
-        async: false,
-      },
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(2);
@@ -872,15 +854,13 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
+    const reason = new Error(
+      'The existence of dependencies of a subagent must not change.'
+    );
+
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {
-        type: 'error',
-        error: new Error(
-          'The existence of dependencies of a subagent must not change.'
-        ),
-        async: false,
-      },
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(2);
@@ -902,15 +882,13 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
+    const reason = new Error(
+      'The existence of dependencies of a subagent must not change.'
+    );
+
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {
-        type: 'error',
-        error: new Error(
-          'The existence of dependencies of a subagent must not change.'
-        ),
-        async: false,
-      },
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(2);
@@ -932,15 +910,13 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
+    const reason = new Error(
+      'The order and number of dependencies of a subagent must not change.'
+    );
+
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {
-        type: 'error',
-        error: new Error(
-          'The order and number of dependencies of a subagent must not change.'
-        ),
-        async: false,
-      },
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(2);
@@ -962,15 +938,13 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
+    const reason = new Error(
+      'The order and number of dependencies of a subagent must not change.'
+    );
+
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {
-        type: 'error',
-        error: new Error(
-          'The order and number of dependencies of a subagent must not change.'
-        ),
-        async: false,
-      },
+      {type: 'rendering', result: 'a'},
+      {type: 'error', reason},
     ]);
 
     expect(agent).toHaveBeenCalledTimes(2);
@@ -999,11 +973,11 @@ describe('Host', () => {
     host2.render(1);
 
     expect(events).toEqual([
-      {type: 'value', value: 'a', async: false, intermediate: false},
-      {type: 'value', value: 0, async: false, intermediate: false},
+      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 0},
       {type: 'reset'},
-      {type: 'value', value: 'b', async: false, intermediate: false},
-      {type: 'value', value: 0, async: false, intermediate: false},
+      {type: 'rendering', result: 'b'},
+      {type: 'rendering', result: 0},
     ]);
   });
 });

@@ -95,14 +95,14 @@ setTimeout(() => {
   strictEqual(events.length, 8);
 
   deepStrictEqual(events, [
-    {type: 'value', value: 'Hello, John!', async: false, intermediate: true},
-    {type: 'value', value: 'Hello, Jane!', async: false, intermediate: false},
-    {type: 'value', value: 'Hi, Jane!', async: false, intermediate: false},
+    {type: 'rendering', result: 'Hello, John!', interim: true},
+    {type: 'rendering', result: 'Hello, Jane!'},
+    {type: 'rendering', result: 'Hi, Jane!'},
     {type: 'reset'},
-    {type: 'value', value: 'Hey, John!', async: false, intermediate: true},
-    {type: 'value', value: 'Hey, Jane!', async: false, intermediate: false},
-    {type: 'value', value: 'Yo, Jane!', async: false, intermediate: false},
-    {type: 'value', value: 'Yo, Johnny!', async: true, intermediate: false},
+    {type: 'rendering', result: 'Hey, John!', interim: true},
+    {type: 'rendering', result: 'Hey, Jane!'},
+    {type: 'rendering', result: 'Yo, Jane!'},
+    {type: 'rendering', result: 'Yo, Johnny!', async: true},
   ]);
 
   console.log('OK');
@@ -237,7 +237,7 @@ class Host<TAgent extends AnyAgent> {
   render(...args: Parameters<TAgent>): void;
 
   /**
-   * Reset the state and clean up the side effects.
+   * Reset the state and clean up all side effects.
    * The next rendering will start from scratch.
    */
   reset(): void;
@@ -256,37 +256,43 @@ type HostEventListener<TAgent extends AnyAgent> = (
 
 ```ts
 type HostEvent<TAgent extends AnyAgent> =
-  | HostValueEvent<TAgent>
-  | HostResetEvent
-  | HostErrorEvent;
+  | RenderingEvent<TAgent>
+  | ResetEvent
+  | ErrorEvent;
 
-interface HostValueEvent<TAgent extends AnyAgent> {
-  readonly type: 'value';
-  readonly value: ReturnType<TAgent>;
-  readonly async: boolean;
-  readonly intermediate: boolean;
+interface RenderingEvent<TAgent extends AnyAgent> {
+  readonly type: 'rendering';
+  readonly result: ReturnType<TAgent>;
+  readonly async?: true;
+  readonly interim?: true;
 }
 
 /**
- * The host has lost its state and the side effects have been cleaned up.
+ * The host has lost its state and all side effects have been cleaned up.
  * The next rendering will start from scratch.
  */
-interface HostResetEvent {
+interface ResetEvent {
   readonly type: 'reset';
 }
 
 /**
- * The host has lost its state and the side effects have been cleaned up.
+ * The host has lost its state and all side effects have been cleaned up.
  * The next rendering will start from scratch.
  */
-interface HostErrorEvent {
+interface ErrorEvent {
   readonly type: 'error';
-  readonly error: unknown;
-  readonly async: boolean;
+  readonly reason: unknown;
+  readonly async?: true;
 }
 ```
 
 ```ts
+/**
+ * Unlike React, Batis always applies all state changes, whether synchronous
+ * or asynchronous, in batches.
+ *
+ * See related React issue: https://github.com/facebook/react/issues/15027
+ */
 type SetState<TState> = (state: TState | CreateState<TState>) => void;
 type CreateState<TState> = (previousState: TState) => TState;
 ```

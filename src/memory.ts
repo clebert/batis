@@ -26,6 +26,12 @@ export interface StateMemoryCell<TState> {
   stateChanges: (TState | CreateState<TState>)[];
 }
 
+/**
+ * Unlike React, Batis always applies all state changes, whether synchronous
+ * or asynchronous, in batches.
+ *
+ * See related React issue: https://github.com/facebook/react/issues/15027
+ */
 export type SetState<TState> = (state: TState | CreateState<TState>) => void;
 export type CreateState<TState> = (previousState: TState) => TState;
 

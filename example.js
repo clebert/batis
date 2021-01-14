@@ -38,14 +38,14 @@ setTimeout(() => {
   strictEqual(events.length, 8);
 
   deepStrictEqual(events, [
-    {type: 'value', value: 'Hello, John!', async: false, intermediate: true},
-    {type: 'value', value: 'Hello, Jane!', async: false, intermediate: false},
-    {type: 'value', value: 'Hi, Jane!', async: false, intermediate: false},
+    {type: 'rendering', result: 'Hello, John!', interim: true},
+    {type: 'rendering', result: 'Hello, Jane!'},
+    {type: 'rendering', result: 'Hi, Jane!'},
     {type: 'reset'},
-    {type: 'value', value: 'Hey, John!', async: false, intermediate: true},
-    {type: 'value', value: 'Hey, Jane!', async: false, intermediate: false},
-    {type: 'value', value: 'Yo, Jane!', async: false, intermediate: false},
-    {type: 'value', value: 'Yo, Johnny!', async: true, intermediate: false},
+    {type: 'rendering', result: 'Hey, John!', interim: true},
+    {type: 'rendering', result: 'Hey, Jane!'},
+    {type: 'rendering', result: 'Yo, Jane!'},
+    {type: 'rendering', result: 'Yo, Johnny!', async: true},
   ]);
 
   console.log('OK');

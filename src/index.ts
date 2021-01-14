@@ -20,33 +20,33 @@ export type HostEventListener<TAgent extends AnyAgent> = (
 ) => void;
 
 export type HostEvent<TAgent extends AnyAgent> =
-  | HostValueEvent<TAgent>
-  | HostResetEvent
-  | HostErrorEvent;
+  | RenderingEvent<TAgent>
+  | ResetEvent
+  | ErrorEvent;
 
-export interface HostValueEvent<TAgent extends AnyAgent> {
-  readonly type: 'value';
-  readonly value: ReturnType<TAgent>;
-  readonly async: boolean;
-  readonly intermediate: boolean;
+export interface RenderingEvent<TAgent extends AnyAgent> {
+  readonly type: 'rendering';
+  readonly result: ReturnType<TAgent>;
+  readonly async?: true;
+  readonly interim?: true;
 }
 
 /**
- * The host has lost its state and the side effects have been cleaned up.
+ * The host has lost its state and all side effects have been cleaned up.
  * The next rendering will start from scratch.
  */
-export interface HostResetEvent {
+export interface ResetEvent {
   readonly type: 'reset';
 }
 
 /**
- * The host has lost its state and the side effects have been cleaned up.
+ * The host has lost its state and all side effects have been cleaned up.
  * The next rendering will start from scratch.
  */
-export interface HostErrorEvent {
+export interface ErrorEvent {
   readonly type: 'error';
-  readonly error: unknown;
-  readonly async: boolean;
+  readonly reason: unknown;
+  readonly async?: true;
 }
 
 let activeHost: Host<AnyAgent> | undefined;
@@ -67,7 +67,7 @@ export class Host<TAgent extends AnyAgent> {
 
           if (host !== activeHost) {
             Promise.resolve()
-              .then(() => host.#renderAsync())
+              .then(() => host.#renderAsynchronously())
               .catch();
           }
         },
@@ -154,15 +154,15 @@ export class Host<TAgent extends AnyAgent> {
     this.#args = args;
 
     try {
-      this.#render(false);
-    } catch (error: unknown) {
+      this.#render();
+    } catch (reason: unknown) {
       this.#memory.reset(true);
-      this.#eventListener({type: 'error', error, async: false});
+      this.#eventListener({type: 'error', reason});
     }
   }
 
   /**
-   * Reset the state and clean up the side effects.
+   * Reset the state and clean up all side effects.
    * The next rendering will start from scratch.
    */
   reset(): void {
@@ -170,44 +170,44 @@ export class Host<TAgent extends AnyAgent> {
     this.#eventListener({type: 'reset'});
   }
 
-  readonly #renderAsync = (): void => {
+  readonly #renderAsynchronously = (): void => {
     try {
       if (this.#memory.applyStateChanges()) {
         this.#render(true);
       }
-    } catch (error: unknown) {
+    } catch (reason: unknown) {
       this.#memory.reset(true);
-      this.#eventListener({type: 'error', error, async: true});
+      this.#eventListener({type: 'error', reason, async: true});
     }
   };
 
-  readonly #render = (async: boolean): void => {
-    let valueEvent: Omit<HostValueEvent<TAgent>, 'intermediate'> | undefined;
+  readonly #render = (async?: true): void => {
+    let renderingEvent: Omit<RenderingEvent<TAgent>, 'interim'> | undefined;
 
-    do {
+    try {
+      activeHost = this;
+
       do {
-        if (valueEvent) {
-          this.#eventListener({...valueEvent, intermediate: true});
-        }
+        do {
+          if (renderingEvent) {
+            this.#eventListener({...renderingEvent, interim: true});
+          }
 
-        try {
-          activeHost = this;
+          const result = this.#agent(...this.#args!);
 
-          valueEvent = {
-            type: 'value',
-            value: this.#agent(...this.#args!),
-            async,
-          };
-        } finally {
-          activeHost = undefined;
-        }
+          renderingEvent = async
+            ? {type: 'rendering', result, async}
+            : {type: 'rendering', result};
 
-        this.#memory.reset();
+          this.#memory.reset();
+        } while (this.#memory.applyStateChanges());
+
+        this.#memory.triggerEffects();
       } while (this.#memory.applyStateChanges());
+    } finally {
+      activeHost = undefined;
+    }
 
-      this.#memory.triggerEffects();
-    } while (this.#memory.applyStateChanges());
-
-    this.#eventListener({...valueEvent, intermediate: false});
+    this.#eventListener(renderingEvent);
   };
 }
