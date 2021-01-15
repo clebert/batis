@@ -55,25 +55,18 @@ and emits events.
 ```js
 import {deepStrictEqual, strictEqual} from 'assert';
 import {Host} from 'batis';
-
-const {useEffect, useMemo, useState} = Host;
 ```
 
 ```js
 function useGreeting(salutation) {
-  const [name, setName] = useState('John');
+  const [name, setName] = Host.useState('John');
 
-  useEffect(() => {
-    if (name === 'John') {
-      setName('Jane');
-    }
+  Host.useEffect(() => {
+    setName('Jane');
+    setTimeout(() => setName('Johnny'));
+  }, []);
 
-    const timeoutId = setTimeout(() => setName('Johnny'));
-
-    return () => clearTimeout(timeoutId);
-  }, [name]);
-
-  return useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
+  return Host.useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
 }
 ```
 
@@ -176,14 +169,12 @@ using `useState` and `useCallback`:
 ```js
 import {Host} from 'batis';
 
-const {useCallback, useState} = Host;
-
 function useReducer(reducer, initialArg, init) {
-  const [state, setState] = useState(
+  const [state, setState] = Host.useState(
     init ? () => init(initialArg) : initialArg
   );
 
-  const dispatch = useCallback(
+  const dispatch = Host.useCallback(
     (action) => setState((previousState) => reducer(previousState, action)),
     []
   );

@@ -2,25 +2,19 @@
 
 const {deepStrictEqual, strictEqual} = require('assert');
 const {Host} = require('./lib/cjs');
-const {useEffect, useMemo, useState} = Host;
 
 /**
  * @param {string} salutation
  */
 function useGreeting(salutation) {
-  const [name, setName] = useState('John');
+  const [name, setName] = Host.useState('John');
 
-  useEffect(() => {
-    if (name === 'John') {
-      setName('Jane');
-    }
+  Host.useEffect(() => {
+    setName('Jane');
+    setTimeout(() => setName('Johnny'));
+  }, []);
 
-    const timeoutId = setTimeout(() => setName('Johnny'));
-
-    return () => clearTimeout(timeoutId);
-  }, [name]);
-
-  return useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
+  return Host.useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
 }
 
 const events = [];
