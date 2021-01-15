@@ -111,9 +111,9 @@ setTimeout(() => {
 
 **Note:** The API of the `Host` class, which allows to pass a single event
 listener, may not be very convenient to use. However, I wanted to create an API
-that was as minimalistic and opinion-free as possible. Higher abstraction
-concepts can be built using this API. The events provide all the necessary
-metadata. For example, it would be possible to implement an API based on async
+that was as minimalistic and opinion-free as possible. A more powerful
+abstraction can be built on top of it, the event system provides all the
+necessary metadata. For example, you could implement an API based on async
 iterators.
 
 ### Testing React/Preact Hooks
