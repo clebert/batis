@@ -5,7 +5,7 @@ export function areDependenciesEqual(
   if (!previousDependencies || !currentDependencies) {
     if (previousDependencies || currentDependencies) {
       throw new Error(
-        'The existence of dependencies of a subagent must not change.'
+        'The existence of dependencies of a hook must not change.'
       );
     }
 
@@ -14,7 +14,7 @@ export function areDependenciesEqual(
 
   if (previousDependencies.length !== currentDependencies.length) {
     throw new Error(
-      'The order and number of dependencies of a subagent must not change.'
+      'The order and number of dependencies of a hook must not change.'
     );
   }
 

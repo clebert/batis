@@ -25,7 +25,7 @@ General reactive JavaScript programming using the idea of React Hooks.
 npm install batis --save
 ```
 
-## Rationale
+## Motivation
 
 Even though [React Hooks](https://reactjs.org/docs/hooks-intro.html) are
 actually a constrained solution for using state and side effects in functional
@@ -35,20 +35,15 @@ wanted to use this type of reactive programming in areas other than web UI
 development. Therefore I wrote Batis...
 
 **Note:** With [Loxia](https://github.com/clebert/loxia), I try to shed more
-light on the modeling of finite-state automata using Batis agents or React
-Hooks.
+light on the modeling of finite-state automata using Hooks.
 
-## Terminology
+## Introduction
 
-There are two main entities in Batis, hosts and agents.
-
-**By analogy with React, a host is like React DOM and an agent is like a
-functional stateless component.**
-
-An agent is comparable to a biological virus. A virus is dependent on a host
-cell because it has no metabolism of its own. So, to use a functional stateless
-agent, you need a host. A host manages the state and side effects of an agent
-and emits events.
+Batis essentially revolves around the concept of the **Hook** and its **host**.
+A Hook is comparable to a biological virus. A virus is dependent on a host cell
+because it has no metabolism of its own. So, in a figurative sense, a host is
+also needed to make use of a functional stateless Hook. A host manages the state
+and side effects of a Hook and sends events to a single listener function.
 
 ## Usage example
 
@@ -200,7 +195,7 @@ function useReducer(reducer, initialArg, init) {
 ### Type definitions
 
 ```ts
-class Host<TAgent extends AnyAgent> {
+class Host<THook extends AnyHook> {
   static useState<TState>(
     initialState: TState | (() => TState)
   ): readonly [TState, SetState<TState>];
@@ -223,9 +218,9 @@ class Host<TAgent extends AnyAgent> {
     current: TValue;
   };
 
-  constructor(agent: TAgent, eventListener: HostEventListener<TAgent>);
+  constructor(hook: THook, eventListener: HostEventListener<THook>);
 
-  render(...args: Parameters<TAgent>): void;
+  render(...args: Parameters<THook>): void;
 
   /**
    * Reset the state and clean up all side effects.
@@ -236,24 +231,24 @@ class Host<TAgent extends AnyAgent> {
 ```
 
 ```ts
-type AnyAgent = (...args: any[]) => any;
+type AnyHook = (...args: any[]) => any;
 ```
 
 ```ts
-type HostEventListener<TAgent extends AnyAgent> = (
-  event: HostEvent<TAgent>
+type HostEventListener<THook extends AnyHook> = (
+  event: HostEvent<THook>
 ) => void;
 ```
 
 ```ts
-type HostEvent<TAgent extends AnyAgent> =
-  | RenderingEvent<TAgent>
+type HostEvent<THook extends AnyHook> =
+  | RenderingEvent<THook>
   | ResetEvent
   | ErrorEvent;
 
-interface RenderingEvent<TAgent extends AnyAgent> {
+interface RenderingEvent<THook extends AnyHook> {
   readonly type: 'rendering';
-  readonly result: ReturnType<TAgent>;
+  readonly result: ReturnType<THook>;
   readonly async?: true;
   readonly interim?: true;
 }

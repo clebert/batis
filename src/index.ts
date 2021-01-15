@@ -13,20 +13,20 @@ import {
 
 export {CleanUpEffect, CreateState, Effect, SetState};
 
-export type AnyAgent = (...args: any[]) => any;
+export type AnyHook = (...args: any[]) => any;
 
-export type HostEventListener<TAgent extends AnyAgent> = (
-  event: HostEvent<TAgent>
+export type HostEventListener<THook extends AnyHook> = (
+  event: HostEvent<THook>
 ) => void;
 
-export type HostEvent<TAgent extends AnyAgent> =
-  | RenderingEvent<TAgent>
+export type HostEvent<THook extends AnyHook> =
+  | RenderingEvent<THook>
   | ResetEvent
   | ErrorEvent;
 
-export interface RenderingEvent<TAgent extends AnyAgent> {
+export interface RenderingEvent<THook extends AnyHook> {
   readonly type: 'rendering';
-  readonly result: ReturnType<TAgent>;
+  readonly result: ReturnType<THook>;
   readonly async?: true;
   readonly interim?: true;
 }
@@ -49,9 +49,9 @@ export interface ErrorEvent {
   readonly async?: true;
 }
 
-let activeHost: Host<AnyAgent> | undefined;
+let activeHost: Host<AnyHook> | undefined;
 
-export class Host<TAgent extends AnyAgent> {
+export class Host<THook extends AnyHook> {
   static useState<TState>(
     initialState: TState | (() => TState)
   ): readonly [TState, SetState<TState>] {
@@ -140,17 +140,17 @@ export class Host<TAgent extends AnyAgent> {
   }
 
   readonly #memory = new Memory();
-  readonly #agent: TAgent;
-  readonly #eventListener: HostEventListener<TAgent>;
+  readonly #hook: THook;
+  readonly #eventListener: HostEventListener<THook>;
 
-  #args: Parameters<TAgent> | undefined;
+  #args: Parameters<THook> | undefined;
 
-  constructor(agent: TAgent, eventListener: HostEventListener<TAgent>) {
-    this.#agent = agent;
+  constructor(hook: THook, eventListener: HostEventListener<THook>) {
+    this.#hook = hook;
     this.#eventListener = eventListener;
   }
 
-  render(...args: Parameters<TAgent>): void {
+  render(...args: Parameters<THook>): void {
     this.#args = args;
 
     try {
@@ -182,7 +182,7 @@ export class Host<TAgent extends AnyAgent> {
   };
 
   readonly #render = (async?: true): void => {
-    let renderingEvent: Omit<RenderingEvent<TAgent>, 'interim'> | undefined;
+    let renderingEvent: Omit<RenderingEvent<THook>, 'interim'> | undefined;
 
     try {
       activeHost = this;
@@ -193,7 +193,7 @@ export class Host<TAgent extends AnyAgent> {
             this.#eventListener({...renderingEvent, interim: true});
           }
 
-          const result = this.#agent(...this.#args!);
+          const result = this.#hook(...this.#args!);
 
           renderingEvent = async
             ? {type: 'rendering', result, async}
