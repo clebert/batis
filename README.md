@@ -100,9 +100,7 @@ setTimeout(() => {
 **Note:** The API of the `Host` class, which allows to pass a single event
 listener, may not be very convenient to use. However, I wanted to create an API
 that was as minimalistic and opinion-free as possible. A more powerful
-abstraction can be built on top of it, the event system provides all the
-necessary metadata. For example, you could implement an API based on async
-iterators.
+abstraction can be built on top of it.
 
 ### Testing React/Preact Hooks
 
@@ -212,11 +210,7 @@ class Host<THook extends AnyHook> {
     dependencies: readonly unknown[]
   ): TCallback;
 
-  static useRef<TValue>(
-    initialValue: TValue
-  ): {
-    current: TValue;
-  };
+  static useRef<TValue>(initialValue: TValue): {current: TValue};
 
   constructor(hook: THook, eventListener: HostEventListener<THook>);
 
