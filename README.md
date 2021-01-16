@@ -58,7 +58,14 @@ function useGreeting(salutation) {
 
   Host.useEffect(() => {
     setName('Jane');
-    setTimeout(() => setName('Johnny'));
+
+    setTimeout(() => {
+      // Unlike React, Batis always applies all state changes, whether
+      // synchronous or asynchronous, in batches. Therefore, "Janie" will never
+      // be greeted individually.
+      setName('Janie');
+      setName((prevName) => prevName + ' and Johnny');
+    });
   }, []);
 
   return Host.useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
@@ -90,7 +97,7 @@ setTimeout(() => {
     {type: 'rendering', result: 'Hey, John!', interim: true},
     {type: 'rendering', result: 'Hey, Jane!'},
     {type: 'rendering', result: 'Yo, Jane!'},
-    {type: 'rendering', result: 'Yo, Johnny!', async: true},
+    {type: 'rendering', result: 'Yo, Janie and Johnny!', async: true},
   ]);
 
   console.log('OK');
