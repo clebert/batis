@@ -756,7 +756,7 @@ describe('Host', () => {
     expect(hook).toBeCalledTimes(3);
   });
 
-  test('using fewer hooks causes an error event', () => {
+  test('using fewer Hooks causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
         useState('a');
@@ -773,7 +773,7 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
-    const reason = new Error('The number of hooks used must not change.');
+    const reason = new Error('The number of Hooks used must not change.');
 
     expect(events).toEqual([
       {type: 'rendering', result: 'a'},
@@ -783,7 +783,7 @@ describe('Host', () => {
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('using more hooks causes an error event', () => {
+  test('using more Hooks causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
         useState('a');
@@ -800,7 +800,7 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
-    const reason = new Error('The number of hooks used must not change.');
+    const reason = new Error('The number of Hooks used must not change.');
 
     expect(events).toEqual([
       {type: 'rendering', result: 'a'},
@@ -810,7 +810,7 @@ describe('Host', () => {
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('changing the order of the hooks used causes an error event', () => {
+  test('changing the order of the Hooks used causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
         useState('a');
@@ -826,7 +826,7 @@ describe('Host', () => {
     host.render('a');
     host.render('b');
 
-    const reason = new Error('The order of the hooks used must not change.');
+    const reason = new Error('The order of the Hooks used must not change.');
 
     expect(events).toEqual([
       {type: 'rendering', result: 'a'},
@@ -836,7 +836,7 @@ describe('Host', () => {
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('removing the dependencies of a hook causes an error event', () => {
+  test('removing the dependencies of a Hook causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
         useEffect(jest.fn(), []);
@@ -853,7 +853,7 @@ describe('Host', () => {
     host.render('b');
 
     const reason = new Error(
-      'The existence of dependencies of a hook must not change.'
+      'The existence of dependencies of a Hook must not change.'
     );
 
     expect(events).toEqual([
@@ -864,7 +864,7 @@ describe('Host', () => {
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('adding the dependencies of a hook causes an error event', () => {
+  test('adding the dependencies of a Hook causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
         useEffect(jest.fn());
@@ -881,7 +881,7 @@ describe('Host', () => {
     host.render('b');
 
     const reason = new Error(
-      'The existence of dependencies of a hook must not change.'
+      'The existence of dependencies of a Hook must not change.'
     );
 
     expect(events).toEqual([
@@ -892,7 +892,7 @@ describe('Host', () => {
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('removing a single dependency of a hook causes an error event', () => {
+  test('removing a single dependency of a Hook causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
         useEffect(jest.fn(), [1, 0]);
@@ -909,7 +909,7 @@ describe('Host', () => {
     host.render('b');
 
     const reason = new Error(
-      'The order and number of dependencies of a hook must not change.'
+      'The order and number of dependencies of a Hook must not change.'
     );
 
     expect(events).toEqual([
@@ -920,7 +920,7 @@ describe('Host', () => {
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('adding a single dependency of a hook causes an error event', () => {
+  test('adding a single dependency of a Hook causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
         useEffect(jest.fn(), [1]);
@@ -937,7 +937,7 @@ describe('Host', () => {
     host.render('b');
 
     const reason = new Error(
-      'The order and number of dependencies of a hook must not change.'
+      'The order and number of dependencies of a Hook must not change.'
     );
 
     expect(events).toEqual([
@@ -976,6 +976,32 @@ describe('Host', () => {
       {type: 'reset'},
       {type: 'rendering', result: 'b'},
       {type: 'rendering', result: 0},
+    ]);
+  });
+
+  test('using a Hook without a host causes an error event', () => {
+    const reason = new Error('A Hook cannot be used without a host.');
+
+    expect(() => useState('a')).toThrow(reason);
+    expect(() => useEffect(jest.fn())).toThrow(reason);
+    expect(() => useMemo(jest.fn(), [])).toThrow(reason);
+
+    new Host(() => useEffect(() => void useState('a')), eventListener).render();
+
+    new Host(
+      () => useEffect(() => void useEffect(jest.fn())),
+      eventListener
+    ).render();
+
+    new Host(
+      () => useEffect(() => void useMemo(jest.fn(), [])),
+      eventListener
+    ).render();
+
+    expect(events).toEqual([
+      {type: 'error', reason},
+      {type: 'error', reason},
+      {type: 'error', reason},
     ]);
   });
 });

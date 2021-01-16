@@ -53,7 +53,7 @@ export class Memory {
 
       this.#memoryCells = [];
     } else if (this.#pointer !== this.#memoryCells.length) {
-      throw new Error('The number of hooks used must not change.');
+      throw new Error('The number of Hooks used must not change.');
     }
 
     this.#allocated = !hard;
@@ -66,11 +66,11 @@ export class Memory {
     const memoryCell = this.#memoryCells[this.#pointer];
 
     if (!memoryCell && this.#allocated) {
-      throw new Error('The number of hooks used must not change.');
+      throw new Error('The number of Hooks used must not change.');
     }
 
     if (memoryCell && !isTypeOf<TMemoryCell>(expectedType, memoryCell)) {
-      throw new Error('The order of the hooks used must not change.');
+      throw new Error('The order of the Hooks used must not change.');
     }
 
     return memoryCell;

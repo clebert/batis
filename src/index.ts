@@ -50,12 +50,21 @@ export interface ErrorEvent {
 }
 
 let activeHost: Host<AnyHook> | undefined;
+let rendering = false;
+
+function getActiveHost(): Host<AnyHook> {
+  if (!activeHost) {
+    throw new Error('A Hook cannot be used without a host.');
+  }
+
+  return activeHost;
+}
 
 export class Host<THook extends AnyHook> {
   static useState<TState>(
     initialState: TState | (() => TState)
   ): readonly [TState, SetState<TState>] {
-    const host = activeHost!;
+    const host = getActiveHost();
 
     let memoryCell = host.#memory.read<StateMemoryCell<TState>>('state');
 
@@ -65,7 +74,7 @@ export class Host<THook extends AnyHook> {
         setState: (state) => {
           memoryCell!.stateChanges = [...memoryCell!.stateChanges, state];
 
-          if (host !== activeHost) {
+          if (!rendering) {
             Promise.resolve()
               .then(() => host.#renderAsynchronously())
               .catch();
@@ -82,7 +91,7 @@ export class Host<THook extends AnyHook> {
   }
 
   static useEffect(effect: Effect, dependencies?: readonly unknown[]): void {
-    const host = activeHost!;
+    const host = getActiveHost();
     const memoryCell = host.#memory.read<EffectMemoryCell>('effect');
 
     if (!memoryCell) {
@@ -108,7 +117,7 @@ export class Host<THook extends AnyHook> {
     createValue: () => TValue,
     dependencies: readonly unknown[]
   ): TValue {
-    const host = activeHost!;
+    const host = getActiveHost();
 
     let memoryCell = host.#memory.read<MemoMemoryCell<TValue>>('memo');
 
@@ -182,10 +191,10 @@ export class Host<THook extends AnyHook> {
   };
 
   readonly #render = (async?: true): void => {
-    let renderingEvent: Omit<RenderingEvent<THook>, 'interim'> | undefined;
-
     try {
-      activeHost = this;
+      rendering = true;
+
+      let renderingEvent: Omit<RenderingEvent<THook>, 'interim'> | undefined;
 
       do {
         do {
@@ -193,21 +202,27 @@ export class Host<THook extends AnyHook> {
             this.#eventListener({...renderingEvent, interim: true});
           }
 
-          const result = this.#hook(...this.#args!);
+          try {
+            activeHost = this;
 
-          renderingEvent = async
-            ? {type: 'rendering', result, async}
-            : {type: 'rendering', result};
+            const result = this.#hook(...this.#args!);
+
+            renderingEvent = async
+              ? {type: 'rendering', result, async}
+              : {type: 'rendering', result};
+          } finally {
+            activeHost = undefined;
+          }
 
           this.#memory.reset();
         } while (this.#memory.applyStateChanges());
 
         this.#memory.triggerEffects();
       } while (this.#memory.applyStateChanges());
-    } finally {
-      activeHost = undefined;
-    }
 
-    this.#eventListener(renderingEvent);
+      this.#eventListener(renderingEvent);
+    } finally {
+      rendering = false;
+    }
   };
 }
