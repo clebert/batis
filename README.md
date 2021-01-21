@@ -30,9 +30,9 @@ npm install batis --save
 Even though [React Hooks](https://reactjs.org/docs/hooks-intro.html) are
 actually a constrained solution for using state and side effects in functional
 stateless components, they have proven to be very elegant in their design.
-Hooks, in my opinion, are particularly well suited for implementing state
-machines. I wanted to use this type of reactive programming in areas other than
-web UI development. Therefore I wrote Batis...
+Hooks, in my opinion, are particularly well suited for implementing side-effect
+dependent state machines. I wanted to use this type of reactive programming in
+areas other than web UI development. Therefore I wrote Batis...
 
 **Note:** With [Loxia](https://github.com/clebert/loxia), I try to shed some
 light on the implementation of state machines using Hooks.
