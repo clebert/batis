@@ -17,8 +17,6 @@
 
 General reactive JavaScript programming using the idea of React Hooks.
 
-<img src="./image.jpg"/>
-
 ## Installation
 
 ```
