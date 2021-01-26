@@ -28,17 +28,17 @@ npm install batis --save
 Even though [React Hooks](https://reactjs.org/docs/hooks-intro.html) are
 actually a constrained solution for using state and side effects in functional
 stateless components, they have proven to be very elegant in their design.
-Hooks, in my opinion, are particularly well suited for implementing side-effect
-dependent state machines. I wanted to use this type of reactive programming in
-areas other than web UI development. Therefore I wrote Batis...
+Hooks, in my opinion, are particularly well suited for implementing
+[state machines](https://github.com/clebert/loxia). I wanted to use this kind of
+reactive programming in areas other than web UI development, so I wrote
+**Batis**.
 
-**Note:** With [Loxia](https://github.com/clebert/loxia), I try to shed some
-light on the implementation of state machines using Hooks.
+**Note:** It turns out that Batis is also good for testing React/Preact Hooks.
 
 ## Introduction
 
-Batis essentially revolves around the concept of the **Hook** and its **host**.
-A Hook is comparable to a biological virus. A virus is dependent on a host cell
+Batis essentially revolves around the concept of a **Hook** and its **host**. A
+Hook is comparable to a biological virus. A virus is dependent on a host cell
 because it has no metabolism of its own. So, in a figurative sense, a host is
 also needed to make use of a functional stateless Hook. A host manages the state
 and side effects of a Hook and sends events to a single listener function.
@@ -109,9 +109,9 @@ abstraction can be built on top of it.
 
 ### Testing React/Preact Hooks
 
-You can use Batis to test your React/Preact implemented Hooks, as long as the
-Hooks you are testing only use the subset of React Hooks implemented by Batis. A
-test with [Jest](https://jestjs.io) can be set up as follows:
+You can use Batis to test your React/Preact Hooks, as long as the Hooks you are
+testing only use the subset of React Hooks implemented by Batis. A test with
+[Jest](https://jestjs.io) can be set up as follows:
 
 <details>
   <summary>Show code</summary>
