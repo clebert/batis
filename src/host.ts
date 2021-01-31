@@ -23,6 +23,10 @@ export type HostEvent<THook extends AnyHook> =
 export interface HostRenderingEvent<THook extends AnyHook> {
   readonly type: 'rendering';
   readonly result: ReturnType<THook>;
+
+  /**
+   * The interim results are sorted in descending order.
+   */
   readonly interimResults: readonly ReturnType<THook>[];
 }
 
