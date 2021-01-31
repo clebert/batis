@@ -66,7 +66,7 @@ function useGreeting(salutation) {
     });
   }, []);
 
-  return Host.useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
+  return Host.useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 ```
 
@@ -82,20 +82,18 @@ greeting.render('Yo');
 ```
 
 ```js
-strictEqual(events.length, 7);
+strictEqual(events.length, 5);
 
 setTimeout(() => {
-  strictEqual(events.length, 8);
+  strictEqual(events.length, 6);
 
   deepStrictEqual(events, [
-    {type: 'rendering', result: 'Hello, John!', interim: true},
-    {type: 'rendering', result: 'Hello, Jane!'},
-    {type: 'rendering', result: 'Hi, Jane!'},
+    {type: 'rendering', result: 'Hello Jane', interimResults: ['Hello John']},
+    {type: 'rendering', result: 'Hi Jane', interimResults: []},
     {type: 'reset'},
-    {type: 'rendering', result: 'Hey, John!', interim: true},
-    {type: 'rendering', result: 'Hey, Jane!'},
-    {type: 'rendering', result: 'Yo, Jane!'},
-    {type: 'rendering', result: 'Yo, Janie and Johnny!', async: true},
+    {type: 'rendering', result: 'Hey Jane', interimResults: ['Hey John']},
+    {type: 'rendering', result: 'Yo Jane', interimResults: []},
+    {type: 'rendering', result: 'Yo Janie and Johnny', interimResults: []},
   ]);
 
   console.log('OK');
@@ -241,22 +239,21 @@ type HostEventListener<THook extends AnyHook> = (
 
 ```ts
 type HostEvent<THook extends AnyHook> =
-  | RenderingEvent<THook>
-  | ResetEvent
-  | ErrorEvent;
+  | HostRenderingEvent<THook>
+  | HostResetEvent
+  | HostErrorEvent;
 
-interface RenderingEvent<THook extends AnyHook> {
+interface HostRenderingEvent<THook extends AnyHook> {
   readonly type: 'rendering';
   readonly result: ReturnType<THook>;
-  readonly async?: true;
-  readonly interim?: true;
+  readonly interimResults: readonly ReturnType<THook>[];
 }
 
 /**
  * The host has lost its state and all side effects have been cleaned up.
  * The next rendering will start from scratch.
  */
-interface ResetEvent {
+interface HostResetEvent {
   readonly type: 'reset';
 }
 
@@ -264,10 +261,9 @@ interface ResetEvent {
  * The host has lost its state and all side effects have been cleaned up.
  * The next rendering will start from scratch.
  */
-interface ErrorEvent {
+interface HostErrorEvent {
   readonly type: 'error';
   readonly reason: unknown;
-  readonly async?: true;
 }
 ```
 

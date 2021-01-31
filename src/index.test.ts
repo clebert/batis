@@ -29,8 +29,8 @@ describe('Host', () => {
     host.render('b');
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 1]},
-      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(1);
@@ -57,10 +57,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 1]},
-      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
       {type: 'reset'},
-      {type: 'rendering', result: ['c', 2]},
+      {type: 'rendering', result: ['c', 2], interimResults: []},
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -90,9 +90,9 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
       {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: ['c', 2]},
+      {type: 'rendering', result: ['c', 2], interimResults: []},
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -129,10 +129,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 1]},
-      {type: 'rendering', result: ['a', 1]},
-      {type: 'error', reason: new Error('b'), async: true},
-      {type: 'rendering', result: ['c', 2]},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
+      {type: 'error', reason: new Error('b')},
+      {type: 'rendering', result: ['c', 2], interimResults: []},
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -178,30 +178,16 @@ describe('Host', () => {
     await new Promise((resolve) => setTimeout(resolve));
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0], interim: true},
-      {type: 'rendering', result: ['b', 2], interim: true},
-      {type: 'rendering', result: ['c', 4]},
-      {type: 'rendering', result: ['d', 6], async: true, interim: true},
-      {type: 'rendering', result: ['e', 8], async: true},
+      {
+        type: 'rendering',
+        result: ['c', 4],
+        interimResults: [
+          ['b', 2],
+          ['a', 0],
+        ],
+      },
+      {type: 'rendering', result: ['e', 8], interimResults: [['d', 6]]},
     ]);
-
-    /*
-    Note: In React, asynchronous state changes are not yet applied in batches.
-
-    https://github.com/facebook/react/issues/15027
-
-    In that case, the recorded events would be expected as follows:
-
-    expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0], interim: true},
-      {type: 'rendering', result: ['b', 2], interim: true},
-      {type: 'rendering', result: ['c', 4]},
-      {type: 'rendering', result: ['d', 4], async: true, interim: true},
-      {type: 'rendering', result: ['e', 6], async: true},
-      {type: 'rendering', result: ['e', 7], async: true},
-      {type: 'rendering', result: ['e', 8], async: true},
-    ]);
-    */
 
     expect(hook).toHaveBeenCalledTimes(5);
   });
@@ -241,7 +227,9 @@ describe('Host', () => {
 
     await new Promise((resolve) => setTimeout(resolve));
 
-    expect(events).toEqual([{type: 'rendering', result: ['a', 0]}]);
+    expect(events).toEqual([
+      {type: 'rendering', result: ['a', 0], interimResults: []},
+    ]);
 
     expect(hook).toHaveBeenCalledTimes(1);
   });
@@ -264,7 +252,10 @@ describe('Host', () => {
 
     await new Promise((resolve) => setTimeout(resolve));
 
-    expect(events).toEqual([{type: 'rendering', result: 'a'}, {type: 'reset'}]);
+    expect(events).toEqual([
+      {type: 'rendering', result: 'a', interimResults: []},
+      {type: 'reset'},
+    ]);
 
     expect(hook).toHaveBeenCalledTimes(1);
   });
@@ -305,8 +296,8 @@ describe('Host', () => {
     expect(events).toEqual([
       {type: 'error', reason: new Error('a')},
       {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: 'c'},
-      {type: 'error', reason: new Error('c'), async: true},
+      {type: 'rendering', result: 'c', interimResults: []},
+      {type: 'error', reason: new Error('c')},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(3);
@@ -339,12 +330,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interim: true},
-      {type: 'rendering', result: 'b'},
-      {type: 'rendering', result: 'b'},
+      {type: 'rendering', result: 'b', interimResults: ['a']},
+      {type: 'rendering', result: 'b', interimResults: []},
       {type: 'reset'},
-      {type: 'rendering', result: 'c', interim: true},
-      {type: 'rendering', result: 'd'},
+      {type: 'rendering', result: 'd', interimResults: ['c']},
     ]);
 
     expect(setStateIdentities.size).toBe(2);
@@ -380,10 +369,8 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interim: true},
       {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: 'c', interim: true},
-      {type: 'rendering', result: 'd'},
+      {type: 'rendering', result: 'd', interimResults: ['c']},
     ]);
 
     expect(setStateIdentities.size).toBe(2);
@@ -429,11 +416,11 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0]},
-      {type: 'rendering', result: ['a', 0]},
-      {type: 'rendering', result: ['a', 1]},
-      {type: 'rendering', result: ['b', 1]},
-      {type: 'rendering', result: ['b', 1]},
+      {type: 'rendering', result: ['a', 0], interimResults: []},
+      {type: 'rendering', result: ['a', 0], interimResults: []},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
+      {type: 'rendering', result: ['b', 1], interimResults: []},
+      {type: 'rendering', result: ['b', 1], interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -459,11 +446,11 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'rendering', result: undefined},
-      {type: 'rendering', result: undefined},
+      {type: 'rendering', result: undefined, interimResults: []},
+      {type: 'rendering', result: undefined, interimResults: []},
       {type: 'reset'},
-      {type: 'rendering', result: undefined},
-      {type: 'rendering', result: undefined},
+      {type: 'rendering', result: undefined, interimResults: []},
+      {type: 'rendering', result: undefined, interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -494,10 +481,10 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: 'c'},
-      {type: 'rendering', result: 'd'},
+      {type: 'rendering', result: 'c', interimResults: []},
+      {type: 'rendering', result: 'd', interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -537,11 +524,11 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
-      {type: 'rendering', result: 'b'},
-      {type: 'error', reason: new Error('b'), async: true},
-      {type: 'rendering', result: 'c'},
-      {type: 'rendering', result: 'd'},
+      {type: 'rendering', result: 'a', interimResults: []},
+      {type: 'rendering', result: 'b', interimResults: []},
+      {type: 'error', reason: new Error('b')},
+      {type: 'rendering', result: 'c', interimResults: []},
+      {type: 'rendering', result: 'd', interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -588,11 +575,11 @@ describe('Host', () => {
     expect(createValue2).toHaveBeenCalledTimes(3);
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0]},
-      {type: 'rendering', result: ['a', 0]},
-      {type: 'rendering', result: ['a', 1]},
-      {type: 'rendering', result: ['b', 1]},
-      {type: 'rendering', result: ['b', 1]},
+      {type: 'rendering', result: ['a', 0], interimResults: []},
+      {type: 'rendering', result: ['a', 0], interimResults: []},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
+      {type: 'rendering', result: ['b', 1], interimResults: []},
+      {type: 'rendering', result: ['b', 1], interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -612,11 +599,11 @@ describe('Host', () => {
     host.render('d');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'reset'},
-      {type: 'rendering', result: 'c'},
-      {type: 'rendering', result: 'c'},
+      {type: 'rendering', result: 'c', interimResults: []},
+      {type: 'rendering', result: 'c', interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -642,11 +629,11 @@ describe('Host', () => {
     host.render('e');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason: new Error('c')},
-      {type: 'rendering', result: 'd'},
-      {type: 'rendering', result: 'd'},
+      {type: 'rendering', result: 'd', interimResults: []},
+      {type: 'rendering', result: 'd', interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -679,11 +666,11 @@ describe('Host', () => {
     host.render('d');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
-      {type: 'rendering', result: 'a'},
-      {type: 'error', reason: new Error('b'), async: true},
-      {type: 'rendering', result: 'c'},
-      {type: 'rendering', result: 'c'},
+      {type: 'rendering', result: 'a', interimResults: []},
+      {type: 'rendering', result: 'a', interimResults: []},
+      {type: 'error', reason: new Error('b')},
+      {type: 'rendering', result: 'c', interimResults: []},
+      {type: 'rendering', result: 'c', interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -719,11 +706,11 @@ describe('Host', () => {
     host.render(callbackI, callbackJ, 'b', 1);
 
     expect(events).toEqual([
-      {type: 'rendering', result: [callbackA, callbackB]},
-      {type: 'rendering', result: [callbackA, callbackB]},
-      {type: 'rendering', result: [callbackA, callbackF]},
-      {type: 'rendering', result: [callbackA, callbackH]},
-      {type: 'rendering', result: [callbackA, callbackH]},
+      {type: 'rendering', result: [callbackA, callbackB], interimResults: []},
+      {type: 'rendering', result: [callbackA, callbackB], interimResults: []},
+      {type: 'rendering', result: [callbackA, callbackF], interimResults: []},
+      {type: 'rendering', result: [callbackA, callbackH], interimResults: []},
+      {type: 'rendering', result: [callbackA, callbackH], interimResults: []},
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -748,9 +735,9 @@ describe('Host', () => {
     host.render();
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0]},
-      {type: 'rendering', result: ['a', 1]},
-      {type: 'rendering', result: ['a', 1]},
+      {type: 'rendering', result: ['a', 0], interimResults: []},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
+      {type: 'rendering', result: ['a', 1], interimResults: []},
     ]);
 
     expect(hook).toBeCalledTimes(3);
@@ -776,7 +763,7 @@ describe('Host', () => {
     const reason = new Error('The number of Hooks used must not change.');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason},
     ]);
 
@@ -803,7 +790,7 @@ describe('Host', () => {
     const reason = new Error('The number of Hooks used must not change.');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason},
     ]);
 
@@ -829,7 +816,7 @@ describe('Host', () => {
     const reason = new Error('The order of the Hooks used must not change.');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason},
     ]);
 
@@ -857,7 +844,7 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason},
     ]);
 
@@ -885,7 +872,7 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason},
     ]);
 
@@ -913,7 +900,7 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason},
     ]);
 
@@ -941,7 +928,7 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
+      {type: 'rendering', result: 'a', interimResults: []},
       {type: 'error', reason},
     ]);
 
@@ -971,11 +958,11 @@ describe('Host', () => {
     host2.render(1);
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a'},
-      {type: 'rendering', result: 0},
+      {type: 'rendering', result: 'a', interimResults: []},
+      {type: 'rendering', result: 0, interimResults: []},
       {type: 'reset'},
-      {type: 'rendering', result: 'b'},
-      {type: 'rendering', result: 0},
+      {type: 'rendering', result: 'b', interimResults: []},
+      {type: 'rendering', result: 0, interimResults: []},
     ]);
   });
 

@@ -21,7 +21,7 @@ function useGreeting(salutation) {
     });
   }, []);
 
-  return Host.useMemo(() => `${salutation}, ${name}!`, [salutation, name]);
+  return Host.useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 
 const events = [];
@@ -33,20 +33,18 @@ greeting.reset();
 greeting.render('Hey');
 greeting.render('Yo');
 
-strictEqual(events.length, 7);
+strictEqual(events.length, 5);
 
 setTimeout(() => {
-  strictEqual(events.length, 8);
+  strictEqual(events.length, 6);
 
   deepStrictEqual(events, [
-    {type: 'rendering', result: 'Hello, John!', interim: true},
-    {type: 'rendering', result: 'Hello, Jane!'},
-    {type: 'rendering', result: 'Hi, Jane!'},
+    {type: 'rendering', result: 'Hello Jane', interimResults: ['Hello John']},
+    {type: 'rendering', result: 'Hi Jane', interimResults: []},
     {type: 'reset'},
-    {type: 'rendering', result: 'Hey, John!', interim: true},
-    {type: 'rendering', result: 'Hey, Jane!'},
-    {type: 'rendering', result: 'Yo, Jane!'},
-    {type: 'rendering', result: 'Yo, Janie and Johnny!', async: true},
+    {type: 'rendering', result: 'Hey Jane', interimResults: ['Hey John']},
+    {type: 'rendering', result: 'Yo Jane', interimResults: []},
+    {type: 'rendering', result: 'Yo Janie and Johnny', interimResults: []},
   ]);
 
   console.log('OK');

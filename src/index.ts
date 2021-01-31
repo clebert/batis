@@ -20,22 +20,21 @@ export type HostEventListener<THook extends AnyHook> = (
 ) => void;
 
 export type HostEvent<THook extends AnyHook> =
-  | RenderingEvent<THook>
-  | ResetEvent
-  | ErrorEvent;
+  | HostRenderingEvent<THook>
+  | HostResetEvent
+  | HostErrorEvent;
 
-export interface RenderingEvent<THook extends AnyHook> {
+export interface HostRenderingEvent<THook extends AnyHook> {
   readonly type: 'rendering';
   readonly result: ReturnType<THook>;
-  readonly async?: true;
-  readonly interim?: true;
+  readonly interimResults: readonly ReturnType<THook>[];
 }
 
 /**
  * The host has lost its state and all side effects have been cleaned up.
  * The next rendering will start from scratch.
  */
-export interface ResetEvent {
+export interface HostResetEvent {
   readonly type: 'reset';
 }
 
@@ -43,10 +42,9 @@ export interface ResetEvent {
  * The host has lost its state and all side effects have been cleaned up.
  * The next rendering will start from scratch.
  */
-export interface ErrorEvent {
+export interface HostErrorEvent {
   readonly type: 'error';
   readonly reason: unknown;
-  readonly async?: true;
 }
 
 let activeHost: Host<AnyHook> | undefined;
@@ -182,34 +180,32 @@ export class Host<THook extends AnyHook> {
   readonly #renderAsynchronously = (): void => {
     try {
       if (this.#memory.applyStateChanges()) {
-        this.#render(true);
+        this.#render();
       }
     } catch (reason: unknown) {
       this.#memory.reset(true);
-      this.#eventListener({type: 'error', reason, async: true});
+      this.#eventListener({type: 'error', reason});
     }
   };
 
-  readonly #render = (async?: true): void => {
+  readonly #render = (): void => {
     try {
       rendering = true;
 
-      let renderingEvent: Omit<RenderingEvent<THook>, 'interim'> | undefined;
+      let results: [ReturnType<THook>, ...ReturnType<THook>[]] | undefined;
 
       do {
         do {
-          if (renderingEvent) {
-            this.#eventListener({...renderingEvent, interim: true});
-          }
-
           try {
             activeHost = this;
 
             const result = this.#hook(...this.#args!);
 
-            renderingEvent = async
-              ? {type: 'rendering', result, async}
-              : {type: 'rendering', result};
+            if (results) {
+              results.unshift(result);
+            } else {
+              results = [result];
+            }
           } finally {
             activeHost = undefined;
           }
@@ -220,7 +216,11 @@ export class Host<THook extends AnyHook> {
         this.#memory.triggerEffects();
       } while (this.#memory.applyStateChanges());
 
-      this.#eventListener(renderingEvent);
+      this.#eventListener({
+        type: 'rendering',
+        result: results[0],
+        interimResults: results.slice(1),
+      });
     } finally {
       rendering = false;
     }
