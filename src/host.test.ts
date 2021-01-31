@@ -1,6 +1,4 @@
-import {AnyHook, Host, HostEvent, HostEventListener} from '.';
-
-const {useCallback, useEffect, useMemo, useRef, useState} = Host;
+import {AnyHook, Host, HostEvent, HostEventListener} from './host';
 
 describe('Host', () => {
   let events: HostEvent<AnyHook>[];
@@ -17,8 +15,8 @@ describe('Host', () => {
     const createInitialState = jest.fn(() => (i += 1));
 
     const hook = jest.fn((arg: string) => {
-      const [state1] = useState(arg);
-      const [state2] = useState(createInitialState);
+      const [state1] = Host.useState(arg);
+      const [state2] = Host.useState(createInitialState);
 
       return [state1, state2];
     });
@@ -43,8 +41,8 @@ describe('Host', () => {
     const createInitialState = jest.fn(() => (i += 1));
 
     const hook = jest.fn((arg: string) => {
-      const [state1] = useState(arg);
-      const [state2] = useState(createInitialState);
+      const [state1] = Host.useState(arg);
+      const [state2] = Host.useState(createInitialState);
 
       return [state1, state2];
     });
@@ -73,8 +71,8 @@ describe('Host', () => {
     const createInitialState = jest.fn(() => (i += 1));
 
     const hook = jest.fn((arg: string) => {
-      const [state1] = useState(arg);
-      const [state2] = useState(createInitialState);
+      const [state1] = Host.useState(arg);
+      const [state2] = Host.useState(createInitialState);
 
       if (arg === 'b') {
         throw new Error(arg);
@@ -105,8 +103,8 @@ describe('Host', () => {
     const createInitialState = jest.fn(() => (i += 1));
 
     const hook = jest.fn((arg: string) => {
-      const [state1, setState1] = useState(arg);
-      const [state2] = useState(createInitialState);
+      const [state1, setState1] = Host.useState(arg);
+      const [state2] = Host.useState(createInitialState);
 
       if (arg === 'b') {
         setTimeout(() =>
@@ -141,10 +139,10 @@ describe('Host', () => {
 
   test('setting a new state triggers a rendering', async () => {
     const hook = jest.fn(() => {
-      const [state1, setState1] = useState('a');
-      const [state2, setState2] = useState(0);
+      const [state1, setState1] = Host.useState('a');
+      const [state2, setState2] = Host.useState(0);
 
-      useEffect(() => {
+      Host.useEffect(() => {
         setState1('c');
         setState2((prevState2) => (prevState2 += 1));
         setState2((prevState2) => (prevState2 += 1));
@@ -194,10 +192,10 @@ describe('Host', () => {
 
   test('setting the same state does not trigger a rendering', async () => {
     const hook = jest.fn(() => {
-      const [state1, setState1] = useState('a');
-      const [state2, setState2] = useState(0);
+      const [state1, setState1] = Host.useState('a');
+      const [state2, setState2] = Host.useState(0);
 
-      useEffect(() => {
+      Host.useEffect(() => {
         setState1('c');
         setState1('a');
         setState2((prevState2) => (prevState2 += 1));
@@ -236,7 +234,7 @@ describe('Host', () => {
 
   test('setting an outdated state does not trigger a rendering', async () => {
     const hook = jest.fn((arg: string) => {
-      const [state, setState] = useState(arg);
+      const [state, setState] = Host.useState(arg);
 
       setTimeout(() => {
         setState('b');
@@ -262,7 +260,7 @@ describe('Host', () => {
 
   test('a failed setting of a state causes an error event', async () => {
     const hook = jest.fn((arg: string) => {
-      const [state, setState] = useState(() => {
+      const [state, setState] = Host.useState(() => {
         if (arg === 'a') {
           throw new Error(arg);
         }
@@ -307,7 +305,7 @@ describe('Host', () => {
     const setStateIdentities = new Set();
 
     const hook = jest.fn((arg: string) => {
-      const [state, setState] = useState(arg);
+      const [state, setState] = Host.useState(arg);
 
       setStateIdentities.add(setState);
 
@@ -344,7 +342,7 @@ describe('Host', () => {
     const setStateIdentities = new Set();
 
     const hook = jest.fn((arg: string) => {
-      const [state, setState] = useState(arg);
+      const [state, setState] = Host.useState(arg);
 
       setStateIdentities.add(setState);
 
@@ -388,9 +386,9 @@ describe('Host', () => {
     const effect3 = jest.fn(() => cleanUpEffect3);
 
     const hook = jest.fn((arg1: string, arg2: number) => {
-      useEffect(effect1);
-      useEffect(effect2, []);
-      useEffect(effect3, [arg1, arg2]);
+      Host.useEffect(effect1);
+      Host.useEffect(effect2, []);
+      Host.useEffect(effect3, [arg1, arg2]);
 
       return [arg1, arg2];
     });
@@ -431,7 +429,7 @@ describe('Host', () => {
     const effect = jest.fn(() => cleanUpEffect);
 
     const hook = jest.fn(() => {
-      useEffect(effect, []);
+      Host.useEffect(effect, []);
     });
 
     const host = new Host<typeof hook>(hook, eventListener);
@@ -461,7 +459,7 @@ describe('Host', () => {
     const effect = jest.fn(() => cleanUpEffect);
 
     const hook = jest.fn((arg: string) => {
-      useEffect(effect, []);
+      Host.useEffect(effect, []);
 
       if (arg === 'b') {
         throw new Error(arg);
@@ -495,9 +493,9 @@ describe('Host', () => {
     const effect = jest.fn(() => cleanUpEffect);
 
     const hook = jest.fn((arg: string) => {
-      const [, setState] = useState(arg);
+      const [, setState] = Host.useState(arg);
 
-      useEffect(effect, []);
+      Host.useEffect(effect, []);
 
       if (arg === 'b') {
         setTimeout(() =>
@@ -536,7 +534,7 @@ describe('Host', () => {
 
   test('a failed triggering of an effect causes an error event', () => {
     const hook = jest.fn((arg: string) => {
-      useEffect(() => {
+      Host.useEffect(() => {
         throw new Error(arg);
       }, []);
 
@@ -557,8 +555,8 @@ describe('Host', () => {
     const createValue2 = jest.fn();
 
     const hook = jest.fn((arg1: string, arg2: number) => {
-      useMemo(createValue1, []);
-      useMemo(createValue2, [arg1, arg2]);
+      Host.useMemo(createValue1, []);
+      Host.useMemo(createValue2, [arg1, arg2]);
 
       return [arg1, arg2];
     });
@@ -587,7 +585,7 @@ describe('Host', () => {
 
   test('a memoized value is recomputed after a reset event', () => {
     const hook = jest.fn((arg: string) => {
-      return useMemo(() => arg, []);
+      return Host.useMemo(() => arg, []);
     });
 
     const host = new Host<typeof hook>(hook, eventListener);
@@ -611,7 +609,7 @@ describe('Host', () => {
 
   test('a memoized value is recomputed after a synchronous error event', () => {
     const hook = jest.fn((arg: string) => {
-      const value = useMemo(() => arg, []);
+      const value = Host.useMemo(() => arg, []);
 
       if (arg === 'c') {
         throw new Error(arg);
@@ -641,8 +639,8 @@ describe('Host', () => {
 
   test('a memoized value is recomputed after an asynchronous error event', async () => {
     const hook = jest.fn((arg: string) => {
-      const value = useMemo(() => arg, []);
-      const [, setState] = useState(arg);
+      const value = Host.useMemo(() => arg, []);
+      const [, setState] = Host.useState(arg);
 
       if (arg === 'b') {
         setTimeout(() =>
@@ -683,7 +681,10 @@ describe('Host', () => {
         callback2: jest.Mock,
         arg1: string,
         arg2: number
-      ) => [useCallback(callback1, []), useCallback(callback2, [arg1, arg2])]
+      ) => [
+        Host.useCallback(callback1, []),
+        Host.useCallback(callback2, [arg1, arg2]),
+      ]
     );
 
     const callbackA = jest.fn();
@@ -718,10 +719,10 @@ describe('Host', () => {
 
   test('a ref object is stable and mutable', () => {
     const hook = jest.fn(() => {
-      const ref1 = useRef('a');
-      const ref2 = useRef(0);
+      const ref1 = Host.useRef('a');
+      const ref2 = Host.useRef(0);
 
-      useEffect(() => {
+      Host.useEffect(() => {
         ref2.current = 1;
       }, []);
 
@@ -746,10 +747,10 @@ describe('Host', () => {
   test('using fewer Hooks causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
-        useState('a');
-        useState('b');
+        Host.useState('a');
+        Host.useState('b');
       } else {
-        useState('a');
+        Host.useState('a');
       }
 
       return arg;
@@ -773,10 +774,10 @@ describe('Host', () => {
   test('using more Hooks causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
-        useState('a');
+        Host.useState('a');
       } else {
-        useState('a');
-        useState('b');
+        Host.useState('a');
+        Host.useState('b');
       }
 
       return arg;
@@ -800,9 +801,9 @@ describe('Host', () => {
   test('changing the order of the Hooks used causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
-        useState('a');
+        Host.useState('a');
       } else {
-        useEffect(jest.fn());
+        Host.useEffect(jest.fn());
       }
 
       return arg;
@@ -826,9 +827,9 @@ describe('Host', () => {
   test('removing the dependencies of a Hook causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
-        useEffect(jest.fn(), []);
+        Host.useEffect(jest.fn(), []);
       } else {
-        useEffect(jest.fn());
+        Host.useEffect(jest.fn());
       }
 
       return arg;
@@ -854,9 +855,9 @@ describe('Host', () => {
   test('adding the dependencies of a Hook causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
-        useEffect(jest.fn());
+        Host.useEffect(jest.fn());
       } else {
-        useEffect(jest.fn(), []);
+        Host.useEffect(jest.fn(), []);
       }
 
       return arg;
@@ -882,9 +883,9 @@ describe('Host', () => {
   test('removing a single dependency of a Hook causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
-        useEffect(jest.fn(), [1, 0]);
+        Host.useEffect(jest.fn(), [1, 0]);
       } else {
-        useEffect(jest.fn(), [1]);
+        Host.useEffect(jest.fn(), [1]);
       }
 
       return arg;
@@ -910,9 +911,9 @@ describe('Host', () => {
   test('adding a single dependency of a Hook causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
-        useEffect(jest.fn(), [1]);
+        Host.useEffect(jest.fn(), [1]);
       } else {
-        useEffect(jest.fn(), [1, 0]);
+        Host.useEffect(jest.fn(), [1, 0]);
       }
 
       return arg;
@@ -937,13 +938,13 @@ describe('Host', () => {
 
   test('using two hosts at the same time', () => {
     const hook1 = (arg: string) => {
-      const [state] = useState(arg);
+      const [state] = Host.useState(arg);
 
       return state;
     };
 
     const hook2 = (arg: number) => {
-      const [state] = useState(arg);
+      const [state] = Host.useState(arg);
 
       return state;
     };
@@ -969,19 +970,22 @@ describe('Host', () => {
   test('using a Hook without a host causes an error event', () => {
     const reason = new Error('A Hook cannot be used without a host.');
 
-    expect(() => useState('a')).toThrow(reason);
-    expect(() => useEffect(jest.fn())).toThrow(reason);
-    expect(() => useMemo(jest.fn(), [])).toThrow(reason);
-
-    new Host(() => useEffect(() => void useState('a')), eventListener).render();
+    expect(() => Host.useState('a')).toThrow(reason);
+    expect(() => Host.useEffect(jest.fn())).toThrow(reason);
+    expect(() => Host.useMemo(jest.fn(), [])).toThrow(reason);
 
     new Host(
-      () => useEffect(() => void useEffect(jest.fn())),
+      () => Host.useEffect(() => void Host.useState('a')),
       eventListener
     ).render();
 
     new Host(
-      () => useEffect(() => void useMemo(jest.fn(), [])),
+      () => Host.useEffect(() => void Host.useEffect(jest.fn())),
+      eventListener
+    ).render();
+
+    new Host(
+      () => Host.useEffect(() => void Host.useMemo(jest.fn(), [])),
       eventListener
     ).render();
 
