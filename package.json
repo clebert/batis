@@ -1,6 +1,6 @@
 {
   "name": "batis",
-  "version": "8.0.0",
+  "version": "8.0.1",
   "description": "General reactive JavaScript programming using the idea of React Hooks.",
   "bugs": {
     "url": "https://github.com/clebert/batis/issues"
