@@ -8,6 +8,7 @@ import {
   SetState,
   StateMemoryCell,
 } from './memory';
+import {microtask} from './microtask';
 
 export type AnyHook = (...args: any[]) => any;
 
@@ -118,7 +119,7 @@ export class Host<THook extends AnyHook> {
           memoryCell!.stateChanges = [...memoryCell!.stateChanges, state];
 
           if (!rendering) {
-            Promise.resolve()
+            microtask()
               .then(() => host.#renderAsynchronously())
               .catch();
           }

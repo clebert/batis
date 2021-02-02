@@ -22,8 +22,14 @@ General reactive JavaScript programming using the idea of
 
 - [Introduction](#introduction)
 - [Getting started](#getting-started)
+  - [Installing Batis](#installing-batis)
+  - [Writing the `useGreeting` Hook](#writing-the-usegreeting-hook)
+  - [Rendering the `useGreeting` Hook using the `Host` class](#rendering-the-usegreeting-hook-using-the-host-class)
+  - [Rendering the `useGreeting` Hook using the `Subject` class](#rendering-the-usegreeting-hook-using-the-subject-class)
+  - [Testing React/Preact Hooks](#testing-reactpreact-hooks)
 - [API reference](#api-reference)
-- [Type definitions](#type-definitions)
+  - [Implementation status](#implementation-status)
+  - [Type definitions](#type-definitions)
 
 ## Introduction
 
@@ -71,7 +77,7 @@ function useGreeting(salutation) {
 }
 ```
 
-### Rendering the `useGreeting` Hook
+### Rendering the `useGreeting` Hook using the `Host` class
 
 ```js
 import {deepStrictEqual} from 'assert';
@@ -98,6 +104,40 @@ setTimeout(() => {
     Host.createRenderingEvent('Yo Janie and Johnny'),
   ]);
 }, 20);
+```
+
+### Rendering the `useGreeting` Hook using the `Subject` class
+
+The API of the `Host` class, which allows to pass a single event listener
+function, may not be very convenient to use. However, I wanted to create an API
+that was as minimalistic and opinion-free as possible. As a more convenient
+abstraction, the `Subject` class can be used:
+
+```js
+import {deepStrictEqual} from 'assert';
+import {Subject} from 'batis';
+
+const greeting = new Subject(useGreeting);
+
+greeting.host.render('Hello');
+greeting.host.render('Hi');
+greeting.host.reset();
+greeting.host.render('Hey');
+greeting.host.render('Yo');
+
+(async () => {
+  deepStrictEqual(await greeting.nextEventBatch, [
+    Host.createRenderingEvent('Yo Jane'),
+    Host.createRenderingEvent('Hey Jane', 'Hey John'),
+    Host.createResetEvent(),
+    Host.createRenderingEvent('Hi Jane'),
+    Host.createRenderingEvent('Hello Jane', 'Hello John'),
+  ]);
+
+  deepStrictEqual(await greeting.nextEventBatch, [
+    Host.createRenderingEvent('Yo Janie and Johnny'),
+  ]);
+})();
 ```
 
 ### Testing React/Preact Hooks
@@ -149,6 +189,9 @@ of Redux) and unlike `useCallback` and `useRef` not that widely used or
 generally useful. Nevertheless, it can be implemented very easily by yourself
 using `useState` and `useCallback`:
 
+<details>
+  <summary>Show code</summary>
+
 ```js
 import {Host} from 'batis';
 
@@ -166,6 +209,8 @@ function useReducer(reducer, initialArg, init) {
 }
 ```
 
+</details>
+
 [usestate]: https://reactjs.org/docs/hooks-reference.html#usestate
 [useeffect]: https://reactjs.org/docs/hooks-reference.html#useeffect
 [usecontext]: https://reactjs.org/docs/hooks-reference.html#usecontext
@@ -178,7 +223,36 @@ function useReducer(reducer, initialArg, init) {
 [uselayouteffect]: https://reactjs.org/docs/hooks-reference.html#uselayouteffect
 [usedebugvalue]: https://reactjs.org/docs/hooks-reference.html#usedebugvalue
 
-## Type definitions
+### Type definitions
+
+<details>
+  <summary>class Subject</summary>
+
+```ts
+/**
+ * A convenient to use shell for the `Host` class.
+ */
+class Subject<THook extends AnyHook> {
+  readonly host: Host<THook>;
+
+  constructor(hook: THook);
+
+  get latestEvent(): HostEvent<THook> | undefined;
+
+  /**
+   * The next event batch contains all events that have occurred in the current
+   * macrotask or, if no events occur or have already occurred, from an upcoming
+   * macrotask in which the next event will occur. The events are sorted in
+   * descending order.
+   */
+  get nextEventBatch(): Promise<HostEventBatch<THook>>;
+}
+```
+
+</details>
+
+<details>
+  <summary>class Host</summary>
 
 ```ts
 class Host<THook extends AnyHook> {
@@ -220,15 +294,10 @@ class Host<THook extends AnyHook> {
 }
 ```
 
-```ts
-type AnyHook = (...args: any[]) => any;
-```
+</details>
 
-```ts
-type HostEventListener<THook extends AnyHook> = (
-  event: HostEvent<THook>
-) => void;
-```
+<details>
+  <summary>type HostEvent</summary>
 
 ```ts
 type HostEvent<THook extends AnyHook> =
@@ -282,6 +351,43 @@ interface HostErrorEvent {
 }
 ```
 
+</details>
+
+<details>
+  <summary>type HostEventBatch</summary>
+
+```ts
+type HostEventBatch<THook extends AnyHook> = readonly [
+  HostEvent<THook>,
+  ...HostEvent<THook>[]
+];
+```
+
+</details>
+
+<details>
+  <summary>type HostEventListener</summary>
+
+```ts
+type HostEventListener<THook extends AnyHook> = (
+  event: HostEvent<THook>
+) => void;
+```
+
+</details>
+
+<details>
+  <summary>type AnyHook</summary>
+
+```ts
+type AnyHook = (...args: any[]) => any;
+```
+
+</details>
+
+<details>
+  <summary>type SetState</summary>
+
 ```ts
 /**
  * Unlike React, Batis always applies all state changes, whether synchronous
@@ -293,10 +399,17 @@ type SetState<TState> = (state: TState | CreateState<TState>) => void;
 type CreateState<TState> = (previousState: TState) => TState;
 ```
 
+</details>
+
+<details>
+  <summary>type Effect</summary>
+
 ```ts
 type Effect = () => CleanUpEffect | void;
 type CleanUpEffect = () => void;
 ```
+
+</details>
 
 ---
 

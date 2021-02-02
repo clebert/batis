@@ -29,7 +29,7 @@
     "lint": "tslint --config tslint.json --project tsconfig.json --format verbose",
     "release": "npm version",
     "postrelease": "git push --follow-tags",
-    "start": "node example/host.js",
+    "start": "node example/host.js && node example/subject.js",
     "test": "jest"
   },
   "devDependencies": {
@@ -48,7 +48,7 @@
   "size-limit": [
     {
       "path": "lib/esm/index.js",
-      "limit": "1.3 KB"
+      "limit": "1.5 KB"
     }
   ]
 }
