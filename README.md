@@ -30,18 +30,16 @@ actually a constrained solution for using state and side effects in functional
 stateless components, they have proven to be very elegant in their design.
 Hooks, in my opinion, are particularly well suited for implementing
 [state machines](https://github.com/clebert/loxia). I wanted to use this kind of
-reactive programming in areas other than web UI development, so I wrote
-**Batis**.
-
-**Note:** It turns out that Batis is also good for testing React/Preact Hooks.
+reactive programming in areas other than web UI development, so I wrote Batis.
+It turns out that Batis is also good for testing React/Preact Hooks.
 
 ## Introduction
 
-Batis essentially revolves around the concept of a **Hook** and its **host**. A
-Hook is comparable to a biological virus. A virus is dependent on a host cell
-because it has no metabolism of its own. So, in a figurative sense, a host is
-also needed to make use of a functional stateless Hook. A host manages the state
-and side effects of a Hook and sends events to a single listener function.
+Batis essentially revolves around the concept of a Hook and its host. A Hook is
+comparable to a biological virus. A virus is dependent on a host cell because it
+has no metabolism of its own. So, in a figurative sense, a host is also needed
+to make use of a functional stateless Hook. A host manages the state and side
+effects of a Hook and sends events to a single listener function.
 
 ## Usage example
 
@@ -88,12 +86,12 @@ setTimeout(() => {
   strictEqual(events.length, 6);
 
   deepStrictEqual(events, [
-    {type: 'rendering', result: 'Hello Jane', interimResults: ['Hello John']},
-    {type: 'rendering', result: 'Hi Jane', interimResults: []},
-    {type: 'reset'},
-    {type: 'rendering', result: 'Hey Jane', interimResults: ['Hey John']},
-    {type: 'rendering', result: 'Yo Jane', interimResults: []},
-    {type: 'rendering', result: 'Yo Janie and Johnny', interimResults: []},
+    Host.createRenderingEvent('Hello Jane', 'Hello John'),
+    Host.createRenderingEvent('Hi Jane'),
+    Host.createResetEvent(),
+    Host.createRenderingEvent('Hey Jane', 'Hey John'),
+    Host.createRenderingEvent('Yo Jane'),
+    Host.createRenderingEvent('Yo Janie and Johnny'),
   ]);
 
   console.log('OK');
@@ -197,6 +195,14 @@ function useReducer(reducer, initialArg, init) {
 
 ```ts
 class Host<THook extends AnyHook> {
+  static createRenderingEvent<THook extends AnyHook>(
+    result: ReturnType<THook>,
+    ...interimResults: readonly ReturnType<THook>[]
+  ): HostRenderingEvent<THook>;
+
+  static createResetEvent(): HostResetEvent;
+  static createErrorEvent(reason: unknown): HostErrorEvent;
+
   static useState<TState>(
     initialState: TState | (() => TState)
   ): readonly [TState, SetState<TState>];

@@ -89,6 +89,21 @@ function getActiveHost(): Host<AnyHook> {
 }
 
 export class Host<THook extends AnyHook> {
+  static createRenderingEvent<THook extends AnyHook>(
+    result: ReturnType<THook>,
+    ...interimResults: readonly ReturnType<THook>[]
+  ): HostRenderingEvent<THook> {
+    return {type: 'rendering', result, interimResults};
+  }
+
+  static createResetEvent(): HostResetEvent {
+    return {type: 'reset'};
+  }
+
+  static createErrorEvent(reason: unknown): HostErrorEvent {
+    return {type: 'error', reason};
+  }
+
   static useState<TState>(
     initialState: TState | (() => TState)
   ): readonly [TState, SetState<TState>] {
@@ -194,7 +209,7 @@ export class Host<THook extends AnyHook> {
       this.#render();
     } catch (reason: unknown) {
       this.#memory.reset(true);
-      this.#eventListener({type: 'error', reason});
+      this.#eventListener(Host.createErrorEvent(reason));
     }
   }
 
@@ -204,7 +219,7 @@ export class Host<THook extends AnyHook> {
    */
   reset(): void {
     this.#memory.reset(true);
-    this.#eventListener({type: 'reset'});
+    this.#eventListener(Host.createResetEvent());
   }
 
   readonly #renderAsynchronously = (): void => {
@@ -214,7 +229,7 @@ export class Host<THook extends AnyHook> {
       }
     } catch (reason: unknown) {
       this.#memory.reset(true);
-      this.#eventListener({type: 'error', reason});
+      this.#eventListener(Host.createErrorEvent(reason));
     }
   };
 
@@ -246,11 +261,9 @@ export class Host<THook extends AnyHook> {
         this.#memory.triggerEffects();
       } while (this.#memory.applyStateChanges());
 
-      this.#eventListener({
-        type: 'rendering',
-        result: results[0],
-        interimResults: results.slice(1),
-      });
+      this.#eventListener(
+        Host.createRenderingEvent<THook>(results[0], ...results.slice(1))
+      );
     } finally {
       rendering = false;
     }

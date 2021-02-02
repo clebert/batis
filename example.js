@@ -39,12 +39,12 @@ setTimeout(() => {
   strictEqual(events.length, 6);
 
   deepStrictEqual(events, [
-    {type: 'rendering', result: 'Hello Jane', interimResults: ['Hello John']},
-    {type: 'rendering', result: 'Hi Jane', interimResults: []},
-    {type: 'reset'},
-    {type: 'rendering', result: 'Hey Jane', interimResults: ['Hey John']},
-    {type: 'rendering', result: 'Yo Jane', interimResults: []},
-    {type: 'rendering', result: 'Yo Janie and Johnny', interimResults: []},
+    Host.createRenderingEvent('Hello Jane', 'Hello John'),
+    Host.createRenderingEvent('Hi Jane'),
+    Host.createResetEvent(),
+    Host.createRenderingEvent('Hey Jane', 'Hey John'),
+    Host.createRenderingEvent('Yo Jane'),
+    Host.createRenderingEvent('Yo Janie and Johnny'),
   ]);
 
   console.log('OK');

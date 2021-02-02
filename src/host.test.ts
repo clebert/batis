@@ -27,8 +27,8 @@ describe('Host', () => {
     host.render('b');
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'rendering', result: ['a', 1], interimResults: []},
+      Host.createRenderingEvent(['a', 1]),
+      Host.createRenderingEvent(['a', 1]),
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(1);
@@ -55,10 +55,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'reset'},
-      {type: 'rendering', result: ['c', 2], interimResults: []},
+      Host.createRenderingEvent(['a', 1]),
+      Host.createRenderingEvent(['a', 1]),
+      Host.createResetEvent(),
+      Host.createRenderingEvent(['c', 2]),
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -88,9 +88,9 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: ['c', 2], interimResults: []},
+      Host.createRenderingEvent(['a', 1]),
+      Host.createErrorEvent(new Error('b')),
+      Host.createRenderingEvent(['c', 2]),
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -127,10 +127,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: ['c', 2], interimResults: []},
+      Host.createRenderingEvent(['a', 1]),
+      Host.createRenderingEvent(['a', 1]),
+      Host.createErrorEvent(new Error('b')),
+      Host.createRenderingEvent(['c', 2]),
     ]);
 
     expect(createInitialState).toHaveBeenCalledTimes(2);
@@ -176,15 +176,8 @@ describe('Host', () => {
     await new Promise((resolve) => setTimeout(resolve));
 
     expect(events).toEqual([
-      {
-        type: 'rendering',
-        result: ['c', 4],
-        interimResults: [
-          ['b', 2],
-          ['a', 0],
-        ],
-      },
-      {type: 'rendering', result: ['e', 8], interimResults: [['d', 6]]},
+      Host.createRenderingEvent(['c', 4], ['b', 2], ['a', 0]),
+      Host.createRenderingEvent(['e', 8], ['d', 6]),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -225,9 +218,7 @@ describe('Host', () => {
 
     await new Promise((resolve) => setTimeout(resolve));
 
-    expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0], interimResults: []},
-    ]);
+    expect(events).toEqual([Host.createRenderingEvent(['a', 0])]);
 
     expect(hook).toHaveBeenCalledTimes(1);
   });
@@ -251,8 +242,8 @@ describe('Host', () => {
     await new Promise((resolve) => setTimeout(resolve));
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'reset'},
+      Host.createRenderingEvent('a'),
+      Host.createResetEvent(),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(1);
@@ -292,10 +283,10 @@ describe('Host', () => {
     await new Promise((resolve) => setTimeout(resolve));
 
     expect(events).toEqual([
-      {type: 'error', reason: new Error('a')},
-      {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: 'c', interimResults: []},
-      {type: 'error', reason: new Error('c')},
+      Host.createErrorEvent(new Error('a')),
+      Host.createErrorEvent(new Error('b')),
+      Host.createRenderingEvent('c'),
+      Host.createErrorEvent(new Error('c')),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(3);
@@ -328,10 +319,10 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'b', interimResults: ['a']},
-      {type: 'rendering', result: 'b', interimResults: []},
-      {type: 'reset'},
-      {type: 'rendering', result: 'd', interimResults: ['c']},
+      Host.createRenderingEvent('b', 'a'),
+      Host.createRenderingEvent('b'),
+      Host.createResetEvent(),
+      Host.createRenderingEvent('d', 'c'),
     ]);
 
     expect(setStateIdentities.size).toBe(2);
@@ -367,8 +358,8 @@ describe('Host', () => {
     host.render('c');
 
     expect(events).toEqual([
-      {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: 'd', interimResults: ['c']},
+      Host.createErrorEvent(new Error('b')),
+      Host.createRenderingEvent('d', 'c'),
     ]);
 
     expect(setStateIdentities.size).toBe(2);
@@ -414,11 +405,11 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0], interimResults: []},
-      {type: 'rendering', result: ['a', 0], interimResults: []},
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'rendering', result: ['b', 1], interimResults: []},
-      {type: 'rendering', result: ['b', 1], interimResults: []},
+      Host.createRenderingEvent(['a', 0]),
+      Host.createRenderingEvent(['a', 0]),
+      Host.createRenderingEvent(['a', 1]),
+      Host.createRenderingEvent(['b', 1]),
+      Host.createRenderingEvent(['b', 1]),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -444,11 +435,11 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'rendering', result: undefined, interimResults: []},
-      {type: 'rendering', result: undefined, interimResults: []},
-      {type: 'reset'},
-      {type: 'rendering', result: undefined, interimResults: []},
-      {type: 'rendering', result: undefined, interimResults: []},
+      Host.createRenderingEvent(undefined),
+      Host.createRenderingEvent(undefined),
+      Host.createResetEvent(),
+      Host.createRenderingEvent(undefined),
+      Host.createRenderingEvent(undefined),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -479,10 +470,10 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: 'c', interimResults: []},
-      {type: 'rendering', result: 'd', interimResults: []},
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(new Error('b')),
+      Host.createRenderingEvent('c'),
+      Host.createRenderingEvent('d'),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -522,11 +513,11 @@ describe('Host', () => {
     expect(effect).toHaveBeenCalledTimes(2);
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'rendering', result: 'b', interimResults: []},
-      {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: 'c', interimResults: []},
-      {type: 'rendering', result: 'd', interimResults: []},
+      Host.createRenderingEvent('a'),
+      Host.createRenderingEvent('b'),
+      Host.createErrorEvent(new Error('b')),
+      Host.createRenderingEvent('c'),
+      Host.createRenderingEvent('d'),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -545,7 +536,7 @@ describe('Host', () => {
 
     host.render('a');
 
-    expect(events).toEqual([{type: 'error', reason: new Error('a')}]);
+    expect(events).toEqual([Host.createErrorEvent(new Error('a'))]);
 
     expect(hook).toHaveBeenCalledTimes(1);
   });
@@ -573,11 +564,11 @@ describe('Host', () => {
     expect(createValue2).toHaveBeenCalledTimes(3);
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0], interimResults: []},
-      {type: 'rendering', result: ['a', 0], interimResults: []},
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'rendering', result: ['b', 1], interimResults: []},
-      {type: 'rendering', result: ['b', 1], interimResults: []},
+      Host.createRenderingEvent(['a', 0]),
+      Host.createRenderingEvent(['a', 0]),
+      Host.createRenderingEvent(['a', 1]),
+      Host.createRenderingEvent(['b', 1]),
+      Host.createRenderingEvent(['b', 1]),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -597,11 +588,11 @@ describe('Host', () => {
     host.render('d');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'reset'},
-      {type: 'rendering', result: 'c', interimResults: []},
-      {type: 'rendering', result: 'c', interimResults: []},
+      Host.createRenderingEvent('a'),
+      Host.createRenderingEvent('a'),
+      Host.createResetEvent(),
+      Host.createRenderingEvent('c'),
+      Host.createRenderingEvent('c'),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -627,11 +618,11 @@ describe('Host', () => {
     host.render('e');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason: new Error('c')},
-      {type: 'rendering', result: 'd', interimResults: []},
-      {type: 'rendering', result: 'd', interimResults: []},
+      Host.createRenderingEvent('a'),
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(new Error('c')),
+      Host.createRenderingEvent('d'),
+      Host.createRenderingEvent('d'),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -664,11 +655,11 @@ describe('Host', () => {
     host.render('d');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason: new Error('b')},
-      {type: 'rendering', result: 'c', interimResults: []},
-      {type: 'rendering', result: 'c', interimResults: []},
+      Host.createRenderingEvent('a'),
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(new Error('b')),
+      Host.createRenderingEvent('c'),
+      Host.createRenderingEvent('c'),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(4);
@@ -707,11 +698,11 @@ describe('Host', () => {
     host.render(callbackI, callbackJ, 'b', 1);
 
     expect(events).toEqual([
-      {type: 'rendering', result: [callbackA, callbackB], interimResults: []},
-      {type: 'rendering', result: [callbackA, callbackB], interimResults: []},
-      {type: 'rendering', result: [callbackA, callbackF], interimResults: []},
-      {type: 'rendering', result: [callbackA, callbackH], interimResults: []},
-      {type: 'rendering', result: [callbackA, callbackH], interimResults: []},
+      Host.createRenderingEvent([callbackA, callbackB]),
+      Host.createRenderingEvent([callbackA, callbackB]),
+      Host.createRenderingEvent([callbackA, callbackF]),
+      Host.createRenderingEvent([callbackA, callbackH]),
+      Host.createRenderingEvent([callbackA, callbackH]),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(5);
@@ -736,9 +727,9 @@ describe('Host', () => {
     host.render();
 
     expect(events).toEqual([
-      {type: 'rendering', result: ['a', 0], interimResults: []},
-      {type: 'rendering', result: ['a', 1], interimResults: []},
-      {type: 'rendering', result: ['a', 1], interimResults: []},
+      Host.createRenderingEvent(['a', 0]),
+      Host.createRenderingEvent(['a', 1]),
+      Host.createRenderingEvent(['a', 1]),
     ]);
 
     expect(hook).toBeCalledTimes(3);
@@ -764,8 +755,8 @@ describe('Host', () => {
     const reason = new Error('The number of Hooks used must not change.');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason},
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(reason),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(2);
@@ -791,8 +782,8 @@ describe('Host', () => {
     const reason = new Error('The number of Hooks used must not change.');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason},
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(reason),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(2);
@@ -817,8 +808,8 @@ describe('Host', () => {
     const reason = new Error('The order of the Hooks used must not change.');
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason},
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(reason),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(2);
@@ -845,8 +836,8 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason},
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(reason),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(2);
@@ -873,8 +864,8 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason},
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(reason),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(2);
@@ -901,8 +892,8 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason},
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(reason),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(2);
@@ -929,8 +920,8 @@ describe('Host', () => {
     );
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'error', reason},
+      Host.createRenderingEvent('a'),
+      Host.createErrorEvent(reason),
     ]);
 
     expect(hook).toHaveBeenCalledTimes(2);
@@ -959,11 +950,11 @@ describe('Host', () => {
     host2.render(1);
 
     expect(events).toEqual([
-      {type: 'rendering', result: 'a', interimResults: []},
-      {type: 'rendering', result: 0, interimResults: []},
-      {type: 'reset'},
-      {type: 'rendering', result: 'b', interimResults: []},
-      {type: 'rendering', result: 0, interimResults: []},
+      Host.createRenderingEvent('a'),
+      Host.createRenderingEvent(0),
+      Host.createResetEvent(),
+      Host.createRenderingEvent('b'),
+      Host.createRenderingEvent(0),
     ]);
   });
 
@@ -990,9 +981,9 @@ describe('Host', () => {
     ).render();
 
     expect(events).toEqual([
-      {type: 'error', reason},
-      {type: 'error', reason},
-      {type: 'error', reason},
+      Host.createErrorEvent(reason),
+      Host.createErrorEvent(reason),
+      Host.createErrorEvent(reason),
     ]);
   });
 });
