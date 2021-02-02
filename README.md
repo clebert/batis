@@ -253,7 +253,7 @@ interface HostRenderingEvent<THook extends AnyHook> {
   readonly interimResults: readonly ReturnType<THook>[];
 
   /**
-   * Allows convenient access without descriminating the event by type.
+   * Allows convenient access without discriminating the event by type.
    */
   readonly reason?: undefined;
 }
@@ -266,7 +266,7 @@ interface HostResetEvent {
   readonly type: 'reset';
 
   /**
-   * Allows convenient access without descriminating the event by type.
+   * Allows convenient access without discriminating the event by type.
    */
   readonly result?: undefined;
   readonly interimResults?: undefined;
@@ -282,7 +282,7 @@ interface HostErrorEvent {
   readonly reason: unknown;
 
   /**
-   * Allows convenient access without descriminating the event by type.
+   * Allows convenient access without discriminating the event by type.
    */
   readonly result?: undefined;
   readonly interimResults?: undefined;
