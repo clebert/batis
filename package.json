@@ -29,7 +29,7 @@
     "lint": "tslint --config tslint.json --project tsconfig.json --format verbose",
     "release": "npm version",
     "postrelease": "git push --follow-tags",
-    "start": "node example.js",
+    "start": "node example/host.js",
     "test": "jest"
   },
   "devDependencies": {

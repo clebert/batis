@@ -15,40 +15,43 @@
 [size-badge]: https://badgen.net/bundlephobia/minzip/batis
 [size-link]: https://bundlephobia.com/result?p=batis
 
-General reactive JavaScript programming using the idea of React Hooks.
+General reactive JavaScript programming using the idea of
+[React Hooks](https://reactjs.org/docs/hooks-intro.html).
 
-## Installation
+## Contents
 
-```
-npm install batis --save
-```
-
-## Motivation
-
-Even though [React Hooks](https://reactjs.org/docs/hooks-intro.html) are
-actually a constrained solution for using state and side effects in functional
-stateless components, they have proven to be very elegant in their design.
-Hooks, in my opinion, are particularly well suited for implementing
-[state machines](https://github.com/clebert/loxia). I wanted to use this kind of
-reactive programming in areas other than web UI development, so I wrote Batis.
-It turns out that Batis is also good for testing React/Preact Hooks.
+- [Introduction](#introduction)
+- [Getting started](#getting-started)
+- [API reference](#api-reference)
+- [Type definitions](#type-definitions)
 
 ## Introduction
+
+Even though React Hooks are actually a constrained solution for using state and
+side effects in functional stateless components, they have proven to be very
+elegant in their design. I wanted to use this kind of reactive programming in
+areas other than web UI development, so I wrote Batis. It turns out that Batis
+is also good for testing React/Preact Hooks.
 
 Batis essentially revolves around the concept of a Hook and its host. A Hook is
 comparable to a biological virus. A virus is dependent on a host cell because it
 has no metabolism of its own. So, in a figurative sense, a host is also needed
 to make use of a functional stateless Hook. A host manages the state and side
-effects of a Hook and sends events to a single listener function.
+effects of a Hook and sends events to a single event listener function.
 
-## Usage example
+## Getting started
 
-```js
-import {deepStrictEqual, strictEqual} from 'assert';
-import {Host} from 'batis';
+### Installing Batis
+
+```
+npm install batis --save
 ```
 
+### Writing the `useGreeting` Hook
+
 ```js
+import {Host} from 'batis';
+
 function useGreeting(salutation) {
   const [name, setName] = Host.useState('John');
 
@@ -60,15 +63,19 @@ function useGreeting(salutation) {
       // synchronous or asynchronous, in batches. Therefore, Janie is not
       // greeted individually.
       setName('Janie');
-      setName((prevName) => prevName + ' and Johnny');
-    });
+      setName((prevName) => `${prevName} and Johnny`);
+    }, 10);
   }, []);
 
   return Host.useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 ```
 
+### Rendering the `useGreeting` Hook
+
 ```js
+import {deepStrictEqual} from 'assert';
+
 const events = [];
 const greeting = new Host(useGreeting, events.push.bind(events));
 
@@ -77,40 +84,27 @@ greeting.render('Hi');
 greeting.reset();
 greeting.render('Hey');
 greeting.render('Yo');
-```
 
-```js
-strictEqual(events.length, 5);
+deepStrictEqual(events, [
+  Host.createRenderingEvent('Hello Jane', 'Hello John'),
+  Host.createRenderingEvent('Hi Jane'),
+  Host.createResetEvent(),
+  Host.createRenderingEvent('Hey Jane', 'Hey John'),
+  Host.createRenderingEvent('Yo Jane'),
+]);
 
 setTimeout(() => {
-  strictEqual(events.length, 6);
-
-  deepStrictEqual(events, [
-    Host.createRenderingEvent('Hello Jane', 'Hello John'),
-    Host.createRenderingEvent('Hi Jane'),
-    Host.createResetEvent(),
-    Host.createRenderingEvent('Hey Jane', 'Hey John'),
-    Host.createRenderingEvent('Yo Jane'),
+  deepStrictEqual(events.slice(5), [
     Host.createRenderingEvent('Yo Janie and Johnny'),
   ]);
-
-  console.log('OK');
-});
+}, 20);
 ```
-
-**Note:** The API of the `Host` class, which allows to pass a single event
-listener, may not be very convenient to use. However, I wanted to create an API
-that was as minimalistic and opinion-free as possible. A more powerful
-abstraction can be built on top of it.
 
 ### Testing React/Preact Hooks
 
 You can use Batis to test your React/Preact Hooks, as long as the Hooks you are
 testing only use the subset of React Hooks implemented by Batis. A test with
 [Jest](https://jestjs.io) can be set up as follows:
-
-<details>
-  <summary>Show code</summary>
 
 ```js
 import {Host} from 'batis';
@@ -125,8 +119,6 @@ jest.mock('react', () => ({...React, ...Host}));
 ```js
 jest.mock('preact/hooks', () => Host);
 ```
-
-</details>
 
 ## API reference
 
@@ -157,9 +149,6 @@ of Redux) and unlike `useCallback` and `useRef` not that widely used or
 generally useful. Nevertheless, it can be implemented very easily by yourself
 using `useState` and `useCallback`:
 
-<details>
-  <summary>Show code</summary>
-
 ```js
 import {Host} from 'batis';
 
@@ -177,8 +166,6 @@ function useReducer(reducer, initialArg, init) {
 }
 ```
 
-</details>
-
 [usestate]: https://reactjs.org/docs/hooks-reference.html#usestate
 [useeffect]: https://reactjs.org/docs/hooks-reference.html#useeffect
 [usecontext]: https://reactjs.org/docs/hooks-reference.html#usecontext
@@ -191,7 +178,7 @@ function useReducer(reducer, initialArg, init) {
 [uselayouteffect]: https://reactjs.org/docs/hooks-reference.html#uselayouteffect
 [usedebugvalue]: https://reactjs.org/docs/hooks-reference.html#usedebugvalue
 
-### Type definitions
+## Type definitions
 
 ```ts
 class Host<THook extends AnyHook> {
@@ -310,28 +297,6 @@ type CreateState<TState> = (previousState: TState) => TState;
 type Effect = () => CleanUpEffect | void;
 type CleanUpEffect = () => void;
 ```
-
-## Development
-
-<details>
-  <summary>Publishing a new release</summary>
-
-```
-npm run release patch
-```
-
-```
-npm run release minor
-```
-
-```
-npm run release major
-```
-
-After a new release has been created by pushing the tag, it must be published
-via the GitHub UI. This triggers the final publication to npm.
-
-</details>
 
 ---
 
