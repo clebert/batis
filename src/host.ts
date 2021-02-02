@@ -28,6 +28,11 @@ export interface HostRenderingEvent<THook extends AnyHook> {
    * The interim results are sorted in descending order.
    */
   readonly interimResults: readonly ReturnType<THook>[];
+
+  /**
+   * Allows convenient access without descriminating the event by type.
+   */
+  readonly reason?: undefined;
 }
 
 /**
@@ -36,6 +41,21 @@ export interface HostRenderingEvent<THook extends AnyHook> {
  */
 export interface HostResetEvent {
   readonly type: 'reset';
+
+  /**
+   * Allows convenient access without descriminating the event by type.
+   */
+  readonly result?: undefined;
+
+  /**
+   * Allows convenient access without descriminating the event by type.
+   */
+  readonly interimResults?: undefined;
+
+  /**
+   * Allows convenient access without descriminating the event by type.
+   */
+  readonly reason?: undefined;
 }
 
 /**
@@ -45,6 +65,16 @@ export interface HostResetEvent {
 export interface HostErrorEvent {
   readonly type: 'error';
   readonly reason: unknown;
+
+  /**
+   * Allows convenient access without descriminating the event by type.
+   */
+  readonly result?: undefined;
+
+  /**
+   * Allows convenient access without descriminating the event by type.
+   */
+  readonly interimResults?: undefined;
 }
 
 let activeHost: Host<AnyHook> | undefined;
