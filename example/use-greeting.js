@@ -1,14 +1,15 @@
 // @ts-check
 
 const {Host} = require('../lib/cjs');
+const {Hooks} = Host;
 
 /**
  * @param {string} salutation
  */
 function useGreeting(salutation) {
-  const [name, setName] = Host.useState('John');
+  const [name, setName] = Hooks.useState('John');
 
-  Host.useEffect(() => {
+  Hooks.useEffect(() => {
     setName('Jane');
 
     setTimeout(() => {
@@ -20,7 +21,7 @@ function useGreeting(salutation) {
     }, 10);
   }, []);
 
-  return Host.useMemo(() => `${salutation} ${name}`, [salutation, name]);
+  return Hooks.useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 
 exports.useGreeting = useGreeting;

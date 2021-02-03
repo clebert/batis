@@ -58,10 +58,12 @@ npm install batis --save
 ```js
 import {Host} from 'batis';
 
-function useGreeting(salutation) {
-  const [name, setName] = Host.useState('John');
+const {Hooks} = Host;
 
-  Host.useEffect(() => {
+function useGreeting(salutation) {
+  const [name, setName] = Hooks.useState('John');
+
+  Hooks.useEffect(() => {
     setName('Jane');
 
     setTimeout(() => {
@@ -73,7 +75,7 @@ function useGreeting(salutation) {
     }, 10);
   }, []);
 
-  return Host.useMemo(() => `${salutation} ${name}`, [salutation, name]);
+  return Hooks.useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 ```
 
@@ -153,11 +155,11 @@ import {Host} from 'batis';
 ```js
 import * as React from 'react';
 
-jest.mock('react', () => ({...React, ...Host}));
+jest.mock('react', () => ({...React, ...Host.Hooks}));
 ```
 
 ```js
-jest.mock('preact/hooks', () => Host);
+jest.mock('preact/hooks', () => Host.Hooks);
 ```
 
 ## API reference
@@ -195,12 +197,14 @@ using `useState` and `useCallback`:
 ```js
 import {Host} from 'batis';
 
+const {Hooks} = Host;
+
 function useReducer(reducer, initialArg, init) {
-  const [state, setState] = Host.useState(
+  const [state, setState] = Hooks.useState(
     init ? () => init(initialArg) : initialArg
   );
 
-  const dispatch = Host.useCallback(
+  const dispatch = Hooks.useCallback(
     (action) => setState((previousState) => reducer(previousState, action)),
     []
   );
@@ -256,6 +260,8 @@ class Subject<THook extends AnyHook> {
 
 ```ts
 class Host<THook extends AnyHook> {
+  static readonly Hooks: BatisHooks;
+
   static createRenderingEvent<THook extends AnyHook>(
     result: ReturnType<THook>,
     ...interimResults: readonly ReturnType<THook>[]
@@ -263,24 +269,6 @@ class Host<THook extends AnyHook> {
 
   static createResetEvent(): HostResetEvent;
   static createErrorEvent(reason: unknown): HostErrorEvent;
-
-  static useState<TState>(
-    initialState: TState | (() => TState)
-  ): readonly [TState, SetState<TState>];
-
-  static useEffect(effect: Effect, dependencies?: readonly unknown[]): void;
-
-  static useMemo<TValue>(
-    createValue: () => TValue,
-    dependencies: readonly unknown[]
-  ): TValue;
-
-  static useCallback<TCallback extends (...args: any[]) => any>(
-    callback: TCallback,
-    dependencies: readonly unknown[]
-  ): TCallback;
-
-  static useRef<TValue>(initialValue: TValue): {current: TValue};
 
   constructor(hook: THook, eventListener: HostEventListener<THook>);
 
@@ -381,6 +369,33 @@ type HostEventListener<THook extends AnyHook> = (
 
 ```ts
 type AnyHook = (...args: any[]) => any;
+```
+
+</details>
+
+<details>
+  <summary>interface BatisHooks</summary>
+
+```ts
+interface BatisHooks {
+  useState<TState>(
+    initialState: TState | (() => TState)
+  ): readonly [TState, SetState<TState>];
+
+  useEffect(effect: Effect, dependencies?: readonly unknown[]): void;
+
+  useMemo<TValue>(
+    createValue: () => TValue,
+    dependencies: readonly unknown[]
+  ): TValue;
+
+  useCallback<TCallback extends (...args: any[]) => any>(
+    callback: TCallback,
+    dependencies: readonly unknown[]
+  ): TCallback;
+
+  useRef<TValue>(initialValue: TValue): {current: TValue};
+}
 ```
 
 </details>

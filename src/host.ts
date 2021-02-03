@@ -78,6 +78,26 @@ export interface HostErrorEvent {
   readonly interimResults?: undefined;
 }
 
+export interface BatisHooks {
+  useState<TState>(
+    initialState: TState | (() => TState)
+  ): readonly [TState, SetState<TState>];
+
+  useEffect(effect: Effect, dependencies?: readonly unknown[]): void;
+
+  useMemo<TValue>(
+    createValue: () => TValue,
+    dependencies: readonly unknown[]
+  ): TValue;
+
+  useCallback<TCallback extends (...args: any[]) => any>(
+    callback: TCallback,
+    dependencies: readonly unknown[]
+  ): TCallback;
+
+  useRef<TValue>(initialValue: TValue): {current: TValue};
+}
+
 let activeHost: Host<AnyHook> | undefined;
 let rendering = false;
 
@@ -90,6 +110,95 @@ function getActiveHost(): Host<AnyHook> {
 }
 
 export class Host<THook extends AnyHook> {
+  static readonly Hooks: BatisHooks = {
+    useState<TState>(
+      initialState: TState | (() => TState)
+    ): readonly [TState, SetState<TState>] {
+      const host = getActiveHost();
+
+      let memoryCell = host.#memory.read<StateMemoryCell<TState>>('state');
+
+      if (!memoryCell) {
+        memoryCell = host.#memory.write({
+          type: 'state',
+          setState: (state) => {
+            memoryCell!.stateChanges = [...memoryCell!.stateChanges, state];
+
+            if (!rendering) {
+              microtask()
+                .then(() => host.#renderAsynchronously())
+                .catch();
+            }
+          },
+          state: isFunction(initialState) ? initialState() : initialState,
+          stateChanges: [],
+        });
+      }
+
+      host.#memory.movePointer();
+
+      return [memoryCell.state, memoryCell.setState];
+    },
+
+    useEffect(effect: Effect, dependencies?: readonly unknown[]): void {
+      const host = getActiveHost();
+      const memoryCell = host.#memory.read<EffectMemoryCell>('effect');
+
+      if (!memoryCell) {
+        host.#memory.write({
+          type: 'effect',
+          outdated: true,
+          effect,
+          dependencies,
+        });
+      } else if (
+        !areDependenciesEqual(memoryCell.dependencies, dependencies) ||
+        memoryCell.outdated
+      ) {
+        memoryCell.outdated = true;
+        memoryCell.effect = effect;
+        memoryCell.dependencies = dependencies;
+      }
+
+      host.#memory.movePointer();
+    },
+
+    useMemo<TValue>(
+      createValue: () => TValue,
+      dependencies: readonly unknown[]
+    ): TValue {
+      const host = getActiveHost();
+
+      let memoryCell = host.#memory.read<MemoMemoryCell<TValue>>('memo');
+
+      if (!memoryCell) {
+        memoryCell = host.#memory.write({
+          type: 'memo',
+          value: createValue(),
+          dependencies,
+        });
+      } else if (!areDependenciesEqual(memoryCell.dependencies, dependencies)) {
+        memoryCell.value = createValue();
+        memoryCell.dependencies = dependencies;
+      }
+
+      host.#memory.movePointer();
+
+      return memoryCell.value;
+    },
+
+    useCallback<TCallback extends (...args: any[]) => any>(
+      callback: TCallback,
+      dependencies: readonly unknown[]
+    ): TCallback {
+      return Host.Hooks.useMemo(() => callback, dependencies);
+    },
+
+    useRef<TValue>(initialValue: TValue): {current: TValue} {
+      return Host.Hooks.useMemo(() => ({current: initialValue}), []);
+    },
+  };
+
   static createRenderingEvent<THook extends AnyHook>(
     result: ReturnType<THook>,
     ...interimResults: readonly ReturnType<THook>[]
@@ -103,93 +212,6 @@ export class Host<THook extends AnyHook> {
 
   static createErrorEvent(reason: unknown): HostErrorEvent {
     return {type: 'error', reason};
-  }
-
-  static useState<TState>(
-    initialState: TState | (() => TState)
-  ): readonly [TState, SetState<TState>] {
-    const host = getActiveHost();
-
-    let memoryCell = host.#memory.read<StateMemoryCell<TState>>('state');
-
-    if (!memoryCell) {
-      memoryCell = host.#memory.write({
-        type: 'state',
-        setState: (state) => {
-          memoryCell!.stateChanges = [...memoryCell!.stateChanges, state];
-
-          if (!rendering) {
-            microtask()
-              .then(() => host.#renderAsynchronously())
-              .catch();
-          }
-        },
-        state: isFunction(initialState) ? initialState() : initialState,
-        stateChanges: [],
-      });
-    }
-
-    host.#memory.movePointer();
-
-    return [memoryCell.state, memoryCell.setState];
-  }
-
-  static useEffect(effect: Effect, dependencies?: readonly unknown[]): void {
-    const host = getActiveHost();
-    const memoryCell = host.#memory.read<EffectMemoryCell>('effect');
-
-    if (!memoryCell) {
-      host.#memory.write({
-        type: 'effect',
-        outdated: true,
-        effect,
-        dependencies,
-      });
-    } else if (
-      !areDependenciesEqual(memoryCell.dependencies, dependencies) ||
-      memoryCell.outdated
-    ) {
-      memoryCell.outdated = true;
-      memoryCell.effect = effect;
-      memoryCell.dependencies = dependencies;
-    }
-
-    host.#memory.movePointer();
-  }
-
-  static useMemo<TValue>(
-    createValue: () => TValue,
-    dependencies: readonly unknown[]
-  ): TValue {
-    const host = getActiveHost();
-
-    let memoryCell = host.#memory.read<MemoMemoryCell<TValue>>('memo');
-
-    if (!memoryCell) {
-      memoryCell = host.#memory.write({
-        type: 'memo',
-        value: createValue(),
-        dependencies,
-      });
-    } else if (!areDependenciesEqual(memoryCell.dependencies, dependencies)) {
-      memoryCell.value = createValue();
-      memoryCell.dependencies = dependencies;
-    }
-
-    host.#memory.movePointer();
-
-    return memoryCell.value;
-  }
-
-  static useCallback<TCallback extends (...args: any[]) => any>(
-    callback: TCallback,
-    dependencies: readonly unknown[]
-  ): TCallback {
-    return Host.useMemo(() => callback, dependencies);
-  }
-
-  static useRef<TValue>(initialValue: TValue): {current: TValue} {
-    return Host.useMemo(() => ({current: initialValue}), []);
   }
 
   readonly #memory = new Memory();
