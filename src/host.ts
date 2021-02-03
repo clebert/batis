@@ -78,6 +78,14 @@ export interface HostErrorEvent {
   readonly interimResults?: undefined;
 }
 
+export type Reducer<TState, TAction> = (
+  previousState: TState,
+  action: TAction
+) => TState;
+
+export type ReducerInit<TArg, TState> = (initialArg: TArg) => TState;
+export type Dispatch<TAction> = (action: TAction) => void;
+
 export interface BatisHooks {
   useState<TState>(
     initialState: TState | (() => TState)
@@ -96,6 +104,17 @@ export interface BatisHooks {
   ): TCallback;
 
   useRef<TValue>(initialValue: TValue): {current: TValue};
+
+  useReducer<TState, TAction>(
+    reducer: Reducer<TState, TAction>,
+    initialArg: TState
+  ): [TState, Dispatch<TAction>];
+
+  useReducer<TArg, TState, TAction>(
+    reducer: Reducer<TState, TAction>,
+    initialArg: TArg,
+    init: ReducerInit<TArg, TState>
+  ): [TState, Dispatch<TAction>];
 }
 
 let activeHost: Host<AnyHook> | undefined;
@@ -196,6 +215,23 @@ export class Host<THook extends AnyHook> {
 
     useRef<TValue>(initialValue: TValue): {current: TValue} {
       return Host.Hooks.useMemo(() => ({current: initialValue}), []);
+    },
+
+    useReducer<TArg, TState, TAction>(
+      reducer: Reducer<TState, TAction>,
+      initialArg: TArg | TState,
+      init?: ReducerInit<TArg, TState>
+    ): [TState, Dispatch<TAction>] {
+      const [state, setState] = Host.Hooks.useState<TState>(
+        init ? () => init(initialArg as TArg) : (initialArg as TState)
+      );
+
+      const dispatch: Dispatch<TAction> = Host.Hooks.useCallback(
+        (action) => setState((previousState) => reducer(previousState, action)),
+        []
+      );
+
+      return [state, dispatch];
     },
   };
 

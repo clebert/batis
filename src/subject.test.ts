@@ -52,7 +52,7 @@ describe('Subject', () => {
     ]);
   });
 
-  test('nextEventBatch is stable during a macrotask', async () => {
+  test('the identity of nextEventBatch is stable during a macrotask', async () => {
     const subject = new Subject((arg: string) => arg);
 
     subject.host.render('a');

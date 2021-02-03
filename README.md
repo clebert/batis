@@ -171,49 +171,18 @@ also applies to this library and should be consulted.
 
 Below you can see the subset of React Hooks implemented by Batis:
 
-| React Hook                                   | Status                        |
-| -------------------------------------------- | ----------------------------- |
-| [`useState`][usestate]                       | ✅Implemented                 |
-| [`useEffect`][useeffect]                     | ✅Implemented                 |
-| [`useMemo`][usememo]                         | ✅Implemented                 |
-| [`useCallback`][usecallback]                 | ✅Implemented                 |
-| [`useRef`][useref]                           | ✅Implemented                 |
-| [`useReducer`][usereducer]                   | ❌Not planned, see note below |
-| [`useContext`][usecontext]                   | ❌Not planned                 |
-| [`useImperativeHandle`][useimperativehandle] | ❌Not planned                 |
-| [`useLayoutEffect`][uselayouteffect]         | ❌Not planned                 |
-| [`useDebugValue`][usedebugvalue]             | ❌Not planned                 |
-
-**Note:** The three primitives are `useState`, `useEffect`, and `useMemo`. For
-example, `useCallback` and `useRef` are implemented using `useMemo` as
-one-liners. In my opinion `useReducer` is rather special (due to the popularity
-of Redux) and unlike `useCallback` and `useRef` not that widely used or
-generally useful. Nevertheless, it can be implemented very easily by yourself
-using `useState` and `useCallback`:
-
-<details>
-  <summary>Show code</summary>
-
-```js
-import {Host} from 'batis';
-
-const {Hooks} = Host;
-
-function useReducer(reducer, initialArg, init) {
-  const [state, setState] = Hooks.useState(
-    init ? () => init(initialArg) : initialArg
-  );
-
-  const dispatch = Hooks.useCallback(
-    (action) => setState((previousState) => reducer(previousState, action)),
-    []
-  );
-
-  return [state, dispatch];
-}
-```
-
-</details>
+| React Hook                                   | Status        |
+| -------------------------------------------- | ------------- |
+| [`useState`][usestate]                       | ✅Implemented |
+| [`useEffect`][useeffect]                     | ✅Implemented |
+| [`useMemo`][usememo]                         | ✅Implemented |
+| [`useCallback`][usecallback]                 | ✅Implemented |
+| [`useRef`][useref]                           | ✅Implemented |
+| [`useReducer`][usereducer]                   | ✅Implemented |
+| [`useContext`][usecontext]                   | ❌Not planned |
+| [`useImperativeHandle`][useimperativehandle] | ❌Not planned |
+| [`useLayoutEffect`][uselayouteffect]         | ❌Not planned |
+| [`useDebugValue`][usedebugvalue]             | ❌Not planned |
 
 [usestate]: https://reactjs.org/docs/hooks-reference.html#usestate
 [useeffect]: https://reactjs.org/docs/hooks-reference.html#useeffect
@@ -395,6 +364,17 @@ interface BatisHooks {
   ): TCallback;
 
   useRef<TValue>(initialValue: TValue): {current: TValue};
+
+  useReducer<TState, TAction>(
+    reducer: Reducer<TState, TAction>,
+    initialArg: TState
+  ): [TState, Dispatch<TAction>];
+
+  useReducer<TArg, TState, TAction>(
+    reducer: Reducer<TState, TAction>,
+    initialArg: TArg,
+    init: ReducerInit<TArg, TState>
+  ): [TState, Dispatch<TAction>];
 }
 ```
 
@@ -422,6 +402,36 @@ type CreateState<TState> = (previousState: TState) => TState;
 ```ts
 type Effect = () => CleanUpEffect | void;
 type CleanUpEffect = () => void;
+```
+
+</details>
+
+<details>
+  <summary>type Reducer</summary>
+
+```ts
+type Reducer<TState, TAction> = (
+  previousState: TState,
+  action: TAction
+) => TState;
+```
+
+</details>
+
+<details>
+  <summary>type ReducerInit</summary>
+
+```ts
+type ReducerInit<TArg, TState> = (initialArg: TArg) => TState;
+```
+
+</details>
+
+<details>
+  <summary>type Dispatch</summary>
+
+```ts
+type Dispatch<TAction> = (action: TAction) => void;
 ```
 
 </details>

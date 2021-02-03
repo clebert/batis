@@ -737,6 +737,110 @@ describe('Host', () => {
     expect(hook).toBeCalledTimes(3);
   });
 
+  test('an initial reducer state is set only once', () => {
+    let i = 0;
+
+    const init = jest.fn((initialArg: string) => initialArg + (i += 1));
+
+    const hook = jest.fn((arg: string) => {
+      const [state1] = Hooks.useReducer(jest.fn(), arg);
+      const [state2] = Hooks.useReducer(jest.fn(), arg, init);
+
+      return [state1, state2];
+    });
+
+    const host = new Host<typeof hook>(hook, eventListener);
+
+    host.render('a');
+    host.render('b');
+
+    expect(events).toEqual([
+      Host.createRenderingEvent(['a', 'a1']),
+      Host.createRenderingEvent(['a', 'a1']),
+    ]);
+
+    expect(init).toHaveBeenCalledTimes(1);
+    expect(hook).toHaveBeenCalledTimes(2);
+  });
+
+  test('reducing a new state triggers a rendering', () => {
+    const hook = jest.fn(() => {
+      const [state, dispatch] = Hooks.useReducer(
+        (previousState: string, action: string) => previousState + action,
+        'a'
+      );
+
+      if (state === 'a') {
+        dispatch('b');
+        dispatch('c');
+      }
+
+      return state;
+    });
+
+    const host = new Host<typeof hook>(hook, eventListener);
+
+    host.render();
+
+    expect(events).toEqual([Host.createRenderingEvent('abc', 'a')]);
+    expect(hook).toHaveBeenCalledTimes(2);
+  });
+
+  test('reducing the same state does not trigger a rendering', () => {
+    const hook = jest.fn(() => {
+      const [state, dispatch] = Hooks.useReducer(
+        (previousState: string) => previousState,
+        'a'
+      );
+
+      if (state === 'a') {
+        dispatch('b');
+        dispatch('c');
+      }
+
+      return state;
+    });
+
+    const host = new Host<typeof hook>(hook, eventListener);
+
+    host.render();
+
+    expect(events).toEqual([Host.createRenderingEvent('a')]);
+    expect(hook).toHaveBeenCalledTimes(1);
+  });
+
+  test('the identity of a dispatch function is stable', () => {
+    const dispatchIdentities = new Set();
+
+    const hook = jest.fn(() => {
+      const [state, dispatch] = Hooks.useReducer(
+        (previousState: string, action: string) => previousState + action,
+        'a'
+      );
+
+      dispatchIdentities.add(dispatch);
+
+      if (state === 'a') {
+        dispatch('b');
+      }
+
+      return state;
+    });
+
+    const host = new Host<typeof hook>(hook, eventListener);
+
+    host.render();
+    host.render();
+
+    expect(events).toEqual([
+      Host.createRenderingEvent('ab', 'a'),
+      Host.createRenderingEvent('ab'),
+    ]);
+
+    expect(dispatchIdentities.size).toBe(1);
+    expect(hook).toHaveBeenCalledTimes(3);
+  });
+
   test('using fewer Hooks causes an error event', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
