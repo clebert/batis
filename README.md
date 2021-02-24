@@ -171,18 +171,25 @@ also applies to this library and should be consulted.
 
 Below you can see the subset of React Hooks implemented by Batis:
 
-| React Hook                                   | Status        |
-| -------------------------------------------- | ------------- |
-| [`useState`][usestate]                       | ✅Implemented |
-| [`useEffect`][useeffect]                     | ✅Implemented |
-| [`useMemo`][usememo]                         | ✅Implemented |
-| [`useCallback`][usecallback]                 | ✅Implemented |
-| [`useRef`][useref]                           | ✅Implemented |
-| [`useReducer`][usereducer]                   | ✅Implemented |
-| [`useContext`][usecontext]                   | ❌Not planned |
-| [`useImperativeHandle`][useimperativehandle] | ❌Not planned |
-| [`useLayoutEffect`][uselayouteffect]         | ❌Not planned |
-| [`useDebugValue`][usedebugvalue]             | ❌Not planned |
+| React Hook                                   | Status                        |
+| -------------------------------------------- | ----------------------------- |
+| [`useState`][usestate]                       | ✅Implemented                 |
+| [`useEffect`][useeffect]                     | ✅Implemented                 |
+| [`useMemo`][usememo]                         | ✅Implemented                 |
+| [`useCallback`][usecallback]                 | ✅Implemented                 |
+| [`useRef`][useref]                           | ✅Implemented                 |
+| [`useReducer`][usereducer]                   | ✅Implemented                 |
+| [`useContext`][usecontext]                   | ❌Not planned                 |
+| [`useImperativeHandle`][useimperativehandle] | ❌Not planned                 |
+| [`useLayoutEffect`][uselayouteffect]         | ❌Not planned, see note below |
+| [`useDebugValue`][usedebugvalue]             | ❌Not planned                 |
+
+**Note:** React executes effects declared using the `useEffect` Hook as a
+macrotask so that they do not block browser rendering. The `useLayoutEffect`
+Hook acts as the synchronous alternative to allow potential DOM changes before
+browser rendering. In Batis, effects are executed always synchronously, so the
+special `useLayoutEffect` Hook is not necessary. For compatibility reasons,
+`useEffect` could be used as an alias for `useLayoutEffect`.
 
 [usestate]: https://reactjs.org/docs/hooks-reference.html#usestate
 [useeffect]: https://reactjs.org/docs/hooks-reference.html#useeffect
