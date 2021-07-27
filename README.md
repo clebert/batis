@@ -23,13 +23,10 @@ General reactive JavaScript programming using the idea of
 - [Introduction](#introduction)
 - [Getting started](#getting-started)
   - [Installing Batis](#installing-batis)
-  - [Writing the `useGreeting` Hook](#writing-the-usegreeting-hook)
-  - [Rendering the `useGreeting` Hook using the `Host` class](#rendering-the-usegreeting-hook-using-the-host-class)
-  - [Rendering the `useGreeting` Hook using the `Subject` class](#rendering-the-usegreeting-hook-using-the-subject-class)
+  - [Using Batis](#using-batis)
   - [Testing React/Preact Hooks](#testing-reactpreact-hooks)
 - [API reference](#api-reference)
   - [Implementation status](#implementation-status)
-  - [Type definitions](#type-definitions)
 
 ## Introduction
 
@@ -43,7 +40,8 @@ Batis essentially revolves around the concept of a Hook and its host. A Hook is
 comparable to a biological virus. A virus is dependent on a host cell because it
 has no metabolism of its own. So, in a figurative sense, a host is also needed
 to make use of a functional stateless Hook. A host manages the state and side
-effects of a Hook and sends events to a single event listener function.
+effects of a Hook and notifies a listener function of asynchronous state changes
+that should result in a re-render.
 
 ## Getting started
 
@@ -53,7 +51,7 @@ effects of a Hook and sends events to a single event listener function.
 npm install batis --save
 ```
 
-### Writing the `useGreeting` Hook
+### Using Batis
 
 ```js
 import {Host} from 'batis';
@@ -79,67 +77,18 @@ function useGreeting(salutation) {
 }
 ```
 
-### Rendering the `useGreeting` Hook using the `Host` class
-
 ```js
-import {deepStrictEqual} from 'assert';
+const greeting = new Host(useGreeting, () => {
+  console.log(greeting.render('Ciao')); // 5: ['Ciao Janie and Johnny']
+});
 
-const events = [];
-const greeting = new Host(useGreeting, events.push.bind(events));
+console.log(greeting.render('Hello')); // 1: ['Hello Jane', 'Hello John']
+console.log(greeting.render('Bonjour')); // 2: ['Bonjour Jane']
 
-greeting.render('Hello');
-greeting.render('Hi');
 greeting.reset();
-greeting.render('Hey');
-greeting.render('Yo');
 
-deepStrictEqual(events, [
-  Host.createRenderingEvent('Hello Jane', 'Hello John'),
-  Host.createRenderingEvent('Hi Jane'),
-  Host.createResetEvent(),
-  Host.createRenderingEvent('Hey Jane', 'Hey John'),
-  Host.createRenderingEvent('Yo Jane'),
-]);
-
-setTimeout(() => {
-  deepStrictEqual(events.slice(5), [
-    Host.createRenderingEvent('Yo Janie and Johnny'),
-  ]);
-}, 20);
-```
-
-### Rendering the `useGreeting` Hook using the `Subject` class
-
-The API of the `Host` class, which allows to pass a single event listener
-function, may not be very convenient to use. However, I wanted to create an API
-that was as minimalistic and opinion-free as possible. As a more convenient
-abstraction, the `Subject` class can be used:
-
-```js
-import {deepStrictEqual} from 'assert';
-import {Subject} from 'batis';
-
-const greeting = new Subject(useGreeting);
-
-greeting.host.render('Hello');
-greeting.host.render('Hi');
-greeting.host.reset();
-greeting.host.render('Hey');
-greeting.host.render('Yo');
-
-(async () => {
-  deepStrictEqual(await greeting.nextEventBatch, [
-    Host.createRenderingEvent('Yo Jane'),
-    Host.createRenderingEvent('Hey Jane', 'Hey John'),
-    Host.createResetEvent(),
-    Host.createRenderingEvent('Hi Jane'),
-    Host.createRenderingEvent('Hello Jane', 'Hello John'),
-  ]);
-
-  deepStrictEqual(await greeting.nextEventBatch, [
-    Host.createRenderingEvent('Yo Janie and Johnny'),
-  ]);
-})();
+console.log(greeting.render('Hallo')); // 3: ['Hallo Jane', 'Hallo John']
+console.log(greeting.render('Hola')); // 4: ['Hola Jane']
 ```
 
 ### Testing React/Preact Hooks
@@ -202,246 +151,6 @@ special `useLayoutEffect` Hook is not necessary. For compatibility reasons,
   https://reactjs.org/docs/hooks-reference.html#useimperativehandle
 [uselayouteffect]: https://reactjs.org/docs/hooks-reference.html#uselayouteffect
 [usedebugvalue]: https://reactjs.org/docs/hooks-reference.html#usedebugvalue
-
-### Type definitions
-
-<details>
-  <summary>class Subject</summary>
-
-```ts
-/**
- * A convenient to use shell for the `Host` class.
- */
-class Subject<THook extends AnyHook> {
-  readonly host: Host<THook>;
-
-  constructor(hook: THook);
-
-  get latestEvent(): HostEvent<THook> | undefined;
-
-  /**
-   * The next event batch contains all events that have occurred in the current
-   * macrotask or, if no events occur or have already occurred, from an upcoming
-   * macrotask in which the next event will occur. The events are sorted in
-   * descending order.
-   */
-  get nextEventBatch(): Promise<HostEventBatch<THook>>;
-}
-```
-
-</details>
-
-<details>
-  <summary>class Host</summary>
-
-```ts
-class Host<THook extends AnyHook> {
-  static readonly Hooks: BatisHooks;
-
-  static createRenderingEvent<THook extends AnyHook>(
-    result: ReturnType<THook>,
-    ...interimResults: readonly ReturnType<THook>[]
-  ): HostRenderingEvent<THook>;
-
-  static createResetEvent(): HostResetEvent;
-  static createErrorEvent(reason: unknown): HostErrorEvent;
-
-  constructor(hook: THook, eventListener: HostEventListener<THook>);
-
-  render(...args: Parameters<THook>): void;
-
-  /**
-   * Reset the state and clean up all side effects.
-   * The next rendering will start from scratch.
-   */
-  reset(): void;
-}
-```
-
-</details>
-
-<details>
-  <summary>type HostEvent</summary>
-
-```ts
-type HostEvent<THook extends AnyHook> =
-  | HostRenderingEvent<THook>
-  | HostResetEvent
-  | HostErrorEvent;
-
-interface HostRenderingEvent<THook extends AnyHook> {
-  readonly type: 'rendering';
-  readonly result: ReturnType<THook>;
-
-  /**
-   * The interim results are sorted in descending order.
-   */
-  readonly interimResults: readonly ReturnType<THook>[];
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly reason?: undefined;
-}
-
-/**
- * The host has lost its state and all side effects have been cleaned up.
- * The next rendering will start from scratch.
- */
-interface HostResetEvent {
-  readonly type: 'reset';
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly result?: undefined;
-  readonly interimResults?: undefined;
-  readonly reason?: undefined;
-}
-
-/**
- * The host has lost its state and all side effects have been cleaned up.
- * The next rendering will start from scratch.
- */
-interface HostErrorEvent {
-  readonly type: 'error';
-  readonly reason: unknown;
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly result?: undefined;
-  readonly interimResults?: undefined;
-}
-```
-
-</details>
-
-<details>
-  <summary>type HostEventBatch</summary>
-
-```ts
-type HostEventBatch<THook extends AnyHook> = readonly [
-  HostEvent<THook>,
-  ...HostEvent<THook>[]
-];
-```
-
-</details>
-
-<details>
-  <summary>type HostEventListener</summary>
-
-```ts
-type HostEventListener<THook extends AnyHook> = (
-  event: HostEvent<THook>
-) => void;
-```
-
-</details>
-
-<details>
-  <summary>type AnyHook</summary>
-
-```ts
-type AnyHook = (...args: any[]) => any;
-```
-
-</details>
-
-<details>
-  <summary>interface BatisHooks</summary>
-
-```ts
-interface BatisHooks {
-  useState<TState>(
-    initialState: TState | (() => TState)
-  ): readonly [TState, SetState<TState>];
-
-  useEffect(effect: Effect, dependencies?: readonly unknown[]): void;
-
-  useMemo<TValue>(
-    createValue: () => TValue,
-    dependencies: readonly unknown[]
-  ): TValue;
-
-  useCallback<TCallback extends (...args: any[]) => any>(
-    callback: TCallback,
-    dependencies: readonly unknown[]
-  ): TCallback;
-
-  useRef<TValue>(initialValue: TValue): {current: TValue};
-
-  useReducer<TState, TAction>(
-    reducer: Reducer<TState, TAction>,
-    initialArg: TState
-  ): [TState, Dispatch<TAction>];
-
-  useReducer<TArg, TState, TAction>(
-    reducer: Reducer<TState, TAction>,
-    initialArg: TArg,
-    init: ReducerInit<TArg, TState>
-  ): [TState, Dispatch<TAction>];
-}
-```
-
-</details>
-
-<details>
-  <summary>type SetState</summary>
-
-```ts
-/**
- * Unlike React, Batis always applies all state changes, whether synchronous
- * or asynchronous, in batches.
- *
- * See related React issue: https://github.com/facebook/react/issues/15027
- */
-type SetState<TState> = (state: TState | CreateState<TState>) => void;
-type CreateState<TState> = (previousState: TState) => TState;
-```
-
-</details>
-
-<details>
-  <summary>type Effect</summary>
-
-```ts
-type Effect = () => CleanUpEffect | void;
-type CleanUpEffect = () => void;
-```
-
-</details>
-
-<details>
-  <summary>type Reducer</summary>
-
-```ts
-type Reducer<TState, TAction> = (
-  previousState: TState,
-  action: TAction
-) => TState;
-```
-
-</details>
-
-<details>
-  <summary>type ReducerInit</summary>
-
-```ts
-type ReducerInit<TArg, TState> = (initialArg: TArg) => TState;
-```
-
-</details>
-
-<details>
-  <summary>type Dispatch</summary>
-
-```ts
-type Dispatch<TAction> = (action: TAction) => void;
-```
-
-</details>
 
 ---
 

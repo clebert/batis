@@ -1,6 +1,7 @@
 // @ts-check
 
-const {Host} = require('../lib/cjs');
+const {Host} = require('./lib/cjs');
+
 const {Hooks} = Host;
 
 /**
@@ -24,4 +25,14 @@ function useGreeting(salutation) {
   return Hooks.useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 
-exports.useGreeting = useGreeting;
+const greeting = new Host(useGreeting, () => {
+  console.log(greeting.render('Ciao')); // 5: ['Ciao Janie and Johnny']
+});
+
+console.log(greeting.render('Hello')); // 1: ['Hello Jane', 'Hello John']
+console.log(greeting.render('Bonjour')); // 2: ['Bonjour Jane']
+
+greeting.reset();
+
+console.log(greeting.render('Hallo')); // 3: ['Hallo Jane', 'Hallo John']
+console.log(greeting.render('Hola')); // 4: ['Hola Jane']

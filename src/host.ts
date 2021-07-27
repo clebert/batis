@@ -8,83 +8,6 @@ import {
   SetState,
   StateMemoryCell,
 } from './memory';
-import {microtask} from './microtask';
-
-export type AnyHook = (...args: any[]) => any;
-
-export type HostEventListener<THook extends AnyHook> = (
-  event: HostEvent<THook>
-) => void;
-
-export type HostEvent<THook extends AnyHook> =
-  | HostRenderingEvent<THook>
-  | HostResetEvent
-  | HostErrorEvent;
-
-export interface HostRenderingEvent<THook extends AnyHook> {
-  readonly type: 'rendering';
-  readonly result: ReturnType<THook>;
-
-  /**
-   * The interim results are sorted in descending order.
-   */
-  readonly interimResults: readonly ReturnType<THook>[];
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly reason?: undefined;
-}
-
-/**
- * The host has lost its state and all side effects have been cleaned up.
- * The next rendering will start from scratch.
- */
-export interface HostResetEvent {
-  readonly type: 'reset';
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly result?: undefined;
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly interimResults?: undefined;
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly reason?: undefined;
-}
-
-/**
- * The host has lost its state and all side effects have been cleaned up.
- * The next rendering will start from scratch.
- */
-export interface HostErrorEvent {
-  readonly type: 'error';
-  readonly reason: unknown;
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly result?: undefined;
-
-  /**
-   * Allows convenient access without discriminating the event by type.
-   */
-  readonly interimResults?: undefined;
-}
-
-export type Reducer<TState, TAction> = (
-  previousState: TState,
-  action: TAction
-) => TState;
-
-export type ReducerInit<TArg, TState> = (initialArg: TArg) => TState;
-export type Dispatch<TAction> = (action: TAction) => void;
 
 export interface BatisHooks {
   useState<TState>(
@@ -117,23 +40,21 @@ export interface BatisHooks {
   ): [TState, Dispatch<TAction>];
 }
 
-let activeHost: Host<AnyHook> | undefined;
-let rendering = false;
+export type Reducer<TState, TAction> = (
+  previousState: TState,
+  action: TAction
+) => TState;
 
-function getActiveHost(): Host<AnyHook> {
-  if (!activeHost) {
-    throw new Error('A Hook cannot be used without a host.');
-  }
-
-  return activeHost;
-}
+export type Dispatch<TAction> = (action: TAction) => void;
+export type ReducerInit<TArg, TState> = (initialArg: TArg) => TState;
+export type AnyHook = (...args: any[]) => any;
 
 export class Host<THook extends AnyHook> {
   static readonly Hooks: BatisHooks = {
     useState<TState>(
       initialState: TState | (() => TState)
     ): readonly [TState, SetState<TState>] {
-      const host = getActiveHost();
+      const host = Host.#getActiveHost();
 
       let memoryCell = host.#memory.read<StateMemoryCell<TState>>('state');
 
@@ -143,9 +64,18 @@ export class Host<THook extends AnyHook> {
           setState: (state) => {
             memoryCell!.stateChanges = [...memoryCell!.stateChanges, state];
 
-            if (!rendering) {
-              microtask()
-                .then(() => host.#renderAsynchronously())
+            if (!Host.#rendering) {
+              Promise.resolve()
+                .then(() => {
+                  try {
+                    if (host.#memory.applyStateChanges()) {
+                      host.#listener();
+                    }
+                  } catch (error: unknown) {
+                    host.reset();
+                    host.#listener(error);
+                  }
+                })
                 .catch();
             }
           },
@@ -160,7 +90,7 @@ export class Host<THook extends AnyHook> {
     },
 
     useEffect(effect: Effect, dependencies?: readonly unknown[]): void {
-      const host = getActiveHost();
+      const host = Host.#getActiveHost();
       const memoryCell = host.#memory.read<EffectMemoryCell>('effect');
 
       if (!memoryCell) {
@@ -186,7 +116,7 @@ export class Host<THook extends AnyHook> {
       createValue: () => TValue,
       dependencies: readonly unknown[]
     ): TValue {
-      const host = getActiveHost();
+      const host = Host.#getActiveHost();
 
       let memoryCell = host.#memory.read<MemoMemoryCell<TValue>>('memo');
 
@@ -235,40 +165,63 @@ export class Host<THook extends AnyHook> {
     },
   };
 
-  static createRenderingEvent<THook extends AnyHook>(
-    result: ReturnType<THook>,
-    ...interimResults: readonly ReturnType<THook>[]
-  ): HostRenderingEvent<THook> {
-    return {type: 'rendering', result, interimResults};
-  }
+  static #rendering = false;
+  static #activeHost: Host<AnyHook> | undefined;
 
-  static createResetEvent(): HostResetEvent {
-    return {type: 'reset'};
-  }
+  static #getActiveHost(): Host<AnyHook> {
+    if (!this.#activeHost) {
+      throw new Error('A Hook cannot be used without an active host.');
+    }
 
-  static createErrorEvent(reason: unknown): HostErrorEvent {
-    return {type: 'error', reason};
+    return this.#activeHost;
   }
 
   readonly #memory = new Memory();
   readonly #hook: THook;
-  readonly #eventListener: HostEventListener<THook>;
+  readonly #listener: (error?: unknown) => void;
 
-  #args: Parameters<THook> | undefined;
-
-  constructor(hook: THook, eventListener: HostEventListener<THook>) {
+  constructor(hook: THook, listener: (error?: unknown) => void) {
     this.#hook = hook;
-    this.#eventListener = eventListener;
+    this.#listener = listener;
   }
 
-  render(...args: Parameters<THook>): void {
-    this.#args = args;
-
+  render(
+    ...args: Parameters<THook>
+  ): readonly [ReturnType<THook>, ...ReturnType<THook>[]] {
     try {
-      this.#render();
-    } catch (reason: unknown) {
-      this.#memory.reset(true);
-      this.#eventListener(Host.createErrorEvent(reason));
+      Host.#rendering = true;
+
+      let results: [ReturnType<THook>, ...ReturnType<THook>[]] | undefined;
+
+      do {
+        do {
+          try {
+            Host.#activeHost = this;
+
+            const result = this.#hook(...args!);
+
+            if (results) {
+              results.unshift(result);
+            } else {
+              results = [result];
+            }
+          } finally {
+            Host.#activeHost = undefined;
+          }
+
+          this.#memory.reset();
+        } while (this.#memory.applyStateChanges());
+
+        this.#memory.triggerEffects();
+      } while (this.#memory.applyStateChanges());
+
+      return results;
+    } catch (error: unknown) {
+      this.reset();
+
+      throw error;
+    } finally {
+      Host.#rendering = false;
     }
   }
 
@@ -278,53 +231,5 @@ export class Host<THook extends AnyHook> {
    */
   reset(): void {
     this.#memory.reset(true);
-    this.#eventListener(Host.createResetEvent());
   }
-
-  readonly #renderAsynchronously = (): void => {
-    try {
-      if (this.#memory.applyStateChanges()) {
-        this.#render();
-      }
-    } catch (reason: unknown) {
-      this.#memory.reset(true);
-      this.#eventListener(Host.createErrorEvent(reason));
-    }
-  };
-
-  readonly #render = (): void => {
-    try {
-      rendering = true;
-
-      let results: [ReturnType<THook>, ...ReturnType<THook>[]] | undefined;
-
-      do {
-        do {
-          try {
-            activeHost = this;
-
-            const result = this.#hook(...this.#args!);
-
-            if (results) {
-              results.unshift(result);
-            } else {
-              results = [result];
-            }
-          } finally {
-            activeHost = undefined;
-          }
-
-          this.#memory.reset();
-        } while (this.#memory.applyStateChanges());
-
-        this.#memory.triggerEffects();
-      } while (this.#memory.applyStateChanges());
-
-      this.#eventListener(
-        Host.createRenderingEvent<THook>(results[0], ...results.slice(1))
-      );
-    } finally {
-      rendering = false;
-    }
-  };
 }

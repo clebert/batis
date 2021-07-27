@@ -77,7 +77,8 @@ export class Memory {
   }
 
   write<TMemoryCell extends MemoryCell>(memoryCell: TMemoryCell): TMemoryCell {
-    return (this.#memoryCells[this.#pointer] = memoryCell);
+    return (this.#memoryCells[this.#pointer] =
+      memoryCell as MemoryCell) as TMemoryCell;
   }
 
   movePointer(): void {
