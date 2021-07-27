@@ -55,7 +55,9 @@ npm install batis --save
 
 ```js
 import {Host} from 'batis';
+```
 
+```js
 const {Hooks} = Host;
 
 function useGreeting(salutation) {
@@ -78,8 +80,10 @@ function useGreeting(salutation) {
 ```
 
 ```js
-const greeting = new Host(useGreeting, () => {
-  console.log(greeting.render('Ciao')); // 5: ['Ciao Janie and Johnny']
+const greeting = new Host(useGreeting, (error) => {
+  if (!error) {
+    console.log(greeting.render('Ciao')); // 5: ['Ciao Janie and Johnny']
+  }
 });
 
 console.log(greeting.render('Hello')); // 1: ['Hello Jane', 'Hello John']
