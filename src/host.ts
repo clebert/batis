@@ -49,6 +49,10 @@ export type Dispatch<TAction> = (action: TAction) => void;
 export type ReducerInit<TArg, TState> = (initialArg: TArg) => TState;
 export type AnyHook = (...args: any[]) => any;
 
+export interface HostOptions {
+  onAsyncStateChange?(error?: unknown): void;
+}
+
 export class Host<THook extends AnyHook> {
   static readonly Hooks: BatisHooks = {
     useState<TState>(
@@ -69,11 +73,11 @@ export class Host<THook extends AnyHook> {
                 .then(() => {
                   try {
                     if (host.#memory.applyStateChanges()) {
-                      host.#listener();
+                      host.#options.onAsyncStateChange?.();
                     }
                   } catch (error: unknown) {
                     host.reset();
-                    host.#listener(error);
+                    host.#options.onAsyncStateChange?.(error);
                   }
                 })
                 .catch();
@@ -178,11 +182,11 @@ export class Host<THook extends AnyHook> {
 
   readonly #memory = new Memory();
   readonly #hook: THook;
-  readonly #listener: (error?: unknown) => void;
+  readonly #options: HostOptions;
 
-  constructor(hook: THook, listener: (error?: unknown) => void) {
+  constructor(hook: THook, options: HostOptions = {}) {
     this.#hook = hook;
-    this.#listener = listener;
+    this.#options = options;
   }
 
   render(

@@ -25,10 +25,12 @@ function useGreeting(salutation) {
   return Hooks.useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 
-const greeting = new Host(useGreeting, (error) => {
-  if (!error) {
-    console.log(greeting.render('Ciao')); // 5: ['Ciao Janie and Johnny']
-  }
+const greeting = new Host(useGreeting, {
+  onAsyncStateChange(error) {
+    if (!error) {
+      console.log(greeting.render('Ciao')); // 5: ['Ciao Janie and Johnny']
+    }
+  },
 });
 
 console.log(greeting.render('Hello')); // 1: ['Hello Jane', 'Hello John']
