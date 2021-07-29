@@ -18,16 +18,6 @@
 General reactive JavaScript programming using the idea of
 [React Hooks](https://reactjs.org/docs/hooks-intro.html).
 
-## Contents
-
-- [Introduction](#introduction)
-- [Getting started](#getting-started)
-  - [Installing Batis](#installing-batis)
-  - [Using Batis](#using-batis)
-  - [Testing React/Preact Hooks](#testing-reactpreact-hooks)
-- [API reference](#api-reference)
-  - [Implementation status](#implementation-status)
-
 ## Introduction
 
 Even though React Hooks are actually a constrained solution for using state and
