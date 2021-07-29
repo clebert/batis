@@ -1,5 +1,5 @@
-import {areDependenciesEqual} from './are-dependencies-equal';
-import {isFunction} from './is-function';
+import {areDependenciesEqual} from './are-dependencies-equal.js';
+import {isFunction} from './is-function.js';
 import {
   Effect,
   EffectMemoryCell,
@@ -7,7 +7,7 @@ import {
   Memory,
   SetState,
   StateMemoryCell,
-} from './memory';
+} from './memory.js';
 
 export interface BatisHooks {
   useState<TState>(

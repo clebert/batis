@@ -12,20 +12,18 @@
   "license": "MIT",
   "author": "Clemens Akens <clebert@me.com>",
   "sideEffects": false,
-  "main": "lib/cjs/index.js",
-  "module": "lib/esm/index.js",
-  "types": "lib/esm/index.d.ts",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": [
     "lib"
   ],
   "scripts": {
-    "build": "run-p build:*",
-    "build:cjs": "tsc --project tsconfig.cjs.json --incremental --pretty",
-    "build:esm": "tsc --project tsconfig.esm.json --incremental --pretty",
+    "build": "tsc --project tsconfig.json --incremental --pretty",
     "ci": "run-p format:test lint test build",
     "postci": "size-limit",
-    "format": "prettier --write '**/*.{html,js,json,md,ts,tsx,yml}'",
-    "format:test": "prettier --list-different '**/*.{html,js,json,md,ts,tsx,yml}'",
+    "format": "prettier --write '**/*.{cjs,html,js,json,md,ts,tsx,yml}'",
+    "format:test": "prettier --list-different '**/*.{cjs,html,js,json,md,ts,tsx,yml}'",
     "lint": "tslint --config tslint.json --project tsconfig.json --format verbose",
     "release": "npm version",
     "postrelease": "git push --follow-tags",
@@ -47,7 +45,7 @@
   },
   "size-limit": [
     {
-      "path": "lib/esm/index.js",
+      "path": "lib/index.js",
       "limit": "1.5 KB"
     }
   ]

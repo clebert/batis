@@ -13,6 +13,8 @@
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "outDir": "lib",
+    "rootDir": "src",
     "strict": true,
     "target": "ES2017"
   },

@@ -1,2 +1,2 @@
-export * from './host';
-export type {CleanUpEffect, CreateState, Effect, SetState} from './memory';
+export * from './host.js';
+export type {CleanUpEffect, CreateState, Effect, SetState} from './memory.js';

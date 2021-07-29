@@ -1,4 +1,4 @@
-import {Host} from './host';
+import {Host} from './host.js';
 
 const {Hooks} = Host;
 

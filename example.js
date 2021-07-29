@@ -1,6 +1,6 @@
 // @ts-check
 
-const {Host} = require('./lib/cjs');
+import {Host} from './lib/index.js';
 
 const {Hooks} = Host;
 
