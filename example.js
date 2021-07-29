@@ -1,7 +1,6 @@
 // @ts-check
 
-import {Host} from './lib/index.js';
-
+const {Host} = require('./lib/cjs');
 const {Hooks} = Host;
 
 /**
@@ -25,18 +24,18 @@ function useGreeting(salutation) {
   return Hooks.useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 
-const greeting = new Host(useGreeting, {
-  onAsyncStateChange(error) {
-    if (!error) {
-      console.log(greeting.render('Ciao')); // 5: ['Ciao Janie and Johnny']
-    }
-  },
-});
+(async () => {
+  const greeting = new Host(useGreeting);
 
-console.log(greeting.render('Hello')); // 1: ['Hello Jane', 'Hello John']
-console.log(greeting.render('Bonjour')); // 2: ['Bonjour Jane']
+  console.log(greeting.render('Hello')); // ['Hello Jane', 'Hello John']
+  console.log(greeting.render('Bonjour')); // ['Bonjour Jane']
 
-greeting.reset();
+  greeting.reset();
 
-console.log(greeting.render('Hallo')); // 3: ['Hallo Jane', 'Hallo John']
-console.log(greeting.render('Hola')); // 4: ['Hola Jane']
+  console.log(greeting.render('Hallo')); // ['Hallo Jane', 'Hallo John']
+  console.log(greeting.render('Hola')); // ['Hola Jane']
+
+  await greeting.nextAsyncStateChange;
+
+  console.log(greeting.render('Ciao')); // ['Ciao Janie and Johnny']
+})().catch((error) => console.error('Oops!', error));

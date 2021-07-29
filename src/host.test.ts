@@ -1,18 +1,8 @@
-import {Host} from './host.js';
+import {Host} from './host';
 
 const {Hooks} = Host;
 
-function macrotask(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve));
-}
-
 describe('Host', () => {
-  let onAsyncStateChange: (error: unknown) => void;
-
-  beforeEach(() => {
-    onAsyncStateChange = jest.fn();
-  });
-
   test('an initial state is set only once', () => {
     let i = 0;
 
@@ -25,11 +15,10 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual([['a', 1]]);
     expect(host.render('b')).toEqual([['a', 1]]);
-
     expect(createInitialState).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(2);
   });
@@ -46,13 +35,14 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual([['a', 1]]);
     expect(host.render('b')).toEqual([['a', 1]]);
-    host.reset();
-    expect(host.render('c')).toEqual([['c', 2]]);
 
+    host.reset();
+
+    expect(host.render('c')).toEqual([['c', 2]]);
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
@@ -73,12 +63,11 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual([['a', 1]]);
     expect(() => host.render('b')).toThrow(new Error('b'));
     expect(host.render('c')).toEqual([['c', 2]]);
-
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
@@ -103,23 +92,17 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual([['a', 1]]);
     expect(host.render('b')).toEqual([['a', 1]]);
-
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(0);
-    await macrotask();
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(1);
-    expect(onAsyncStateChange).toHaveBeenCalledWith(new Error('b'));
-
+    await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('b'));
     expect(host.render('c')).toEqual([['c', 2]]);
-
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
-  test('setting a new state notifies the listener', async () => {
+  test('setting a new state resolves the promise', async () => {
     const hook = jest.fn(() => {
       const [state1, setState1] = Hooks.useState('a');
       const [state2, setState2] = Hooks.useState(0);
@@ -133,7 +116,13 @@ describe('Host', () => {
           setState1('d');
           setState2((prevState2) => (prevState2 += 1));
           setState2((prevState2) => (prevState2 += 1));
-        });
+        }, 1);
+
+        setTimeout(() => {
+          setState1('f');
+          setState2((prevState2) => (prevState2 += 1));
+          setState2((prevState2) => (prevState2 += 1));
+        }, 2);
       }, []);
 
       if (state1 === 'a') {
@@ -151,7 +140,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render()).toEqual([
       ['c', 4],
@@ -159,20 +148,28 @@ describe('Host', () => {
       ['a', 0],
     ]);
 
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(0);
-    await macrotask();
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(1);
-    expect(onAsyncStateChange).toHaveBeenCalledWith();
+    const nextAsyncStateChange1 = host.nextAsyncStateChange;
+
+    expect(nextAsyncStateChange1).toBe(host.nextAsyncStateChange);
+
+    await nextAsyncStateChange1;
 
     expect(host.render()).toEqual([
       ['e', 8],
       ['d', 6],
     ]);
 
-    expect(hook).toHaveBeenCalledTimes(5);
+    const nextAsyncStateChange2 = host.nextAsyncStateChange;
+
+    expect(nextAsyncStateChange2).not.toBe(nextAsyncStateChange1);
+
+    await nextAsyncStateChange2;
+
+    expect(host.render()).toEqual([['f', 10]]);
+    expect(hook).toHaveBeenCalledTimes(6);
   });
 
-  test('setting the same state does not notify the listener', async () => {
+  test('setting the same state does not resolve the promise', async () => {
     const hook = jest.fn(() => {
       const [state1, setState1] = Hooks.useState('a');
       const [state2, setState2] = Hooks.useState(0);
@@ -182,13 +179,6 @@ describe('Host', () => {
         setState1('a');
         setState2((prevState2) => (prevState2 += 1));
         setState2((prevState2) => (prevState2 -= 1));
-
-        setTimeout(() => {
-          setState1('d');
-          setState1('a');
-          setState2((prevState2) => (prevState2 += 1));
-          setState2((prevState2) => (prevState2 -= 1));
-        });
       }, []);
 
       if (state1 === 'a') {
@@ -201,35 +191,9 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render()).toEqual([['a', 0]]);
-
-    await macrotask();
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(0);
-
-    expect(hook).toHaveBeenCalledTimes(1);
-  });
-
-  test('setting an outdated state does not notify the listener', async () => {
-    const hook = jest.fn((arg: string) => {
-      const [state, setState] = Hooks.useState(arg);
-
-      setTimeout(() => {
-        setState('b');
-      });
-
-      return state;
-    });
-
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
-
-    expect(host.render('a')).toEqual(['a']);
-    host.reset();
-
-    await macrotask();
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(0);
-
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
@@ -251,24 +215,19 @@ describe('Host', () => {
 
       setTimeout(() => {
         setState(() => {
-          throw new Error(arg);
+          throw arg;
         });
       });
 
       return state;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(() => host.render('a')).toThrow(new Error('a'));
     expect(() => host.render('b')).toThrow(new Error('b'));
     expect(host.render('c')).toEqual(['c']);
-
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(0);
-    await macrotask();
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(1);
-    expect(onAsyncStateChange).toHaveBeenCalledWith(new Error('c'));
-
+    await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('c'));
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
@@ -291,13 +250,14 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['b', 'a']);
     expect(host.render('c')).toEqual(['b']);
-    host.reset();
-    expect(host.render('c')).toEqual(['d', 'c']);
 
+    host.reset();
+
+    expect(host.render('c')).toEqual(['d', 'c']);
     expect(setStateIdentities.size).toBe(2);
     expect(hook).toHaveBeenCalledTimes(5);
   });
@@ -325,11 +285,10 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(() => host.render('a')).toThrow(new Error('b'));
     expect(host.render('c')).toEqual(['d', 'c']);
-
     expect(setStateIdentities.size).toBe(2);
     expect(hook).toHaveBeenCalledTimes(4);
   });
@@ -353,14 +312,13 @@ describe('Host', () => {
     });
 
     const consoleError = jest.spyOn(console, 'error');
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a', 0)).toEqual([['a', 0]]);
     expect(host.render('a', 0)).toEqual([['a', 0]]);
     expect(host.render('a', 1)).toEqual([['a', 1]]);
     expect(host.render('b', 1)).toEqual([['b', 1]]);
     expect(host.render('b', 1)).toEqual([['b', 1]]);
-
     expect(cleanUpEffect1).toHaveBeenCalledTimes(4);
     expect(cleanUpEffect3).toHaveBeenCalledTimes(2);
     expect(effect1).toHaveBeenCalledTimes(5);
@@ -383,14 +341,15 @@ describe('Host', () => {
       Hooks.useEffect(effect, []);
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render()).toEqual([undefined]);
     expect(host.render()).toEqual([undefined]);
+
     host.reset();
-    expect(host.render()).toEqual([undefined]);
-    expect(host.render()).toEqual([undefined]);
 
+    expect(host.render()).toEqual([undefined]);
+    expect(host.render()).toEqual([undefined]);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(4);
@@ -410,13 +369,12 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(() => host.render('b')).toThrow(new Error('b'));
     expect(host.render('c')).toEqual(['c']);
     expect(host.render('d')).toEqual(['d']);
-
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(4);
@@ -442,19 +400,13 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(host.render('b')).toEqual(['b']);
-
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(0);
-    await macrotask();
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(1);
-    expect(onAsyncStateChange).toHaveBeenCalledWith(new Error('b'));
-
+    await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('b'));
     expect(host.render('c')).toEqual(['c']);
     expect(host.render('d')).toEqual(['d']);
-
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(4);
@@ -469,10 +421,9 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(() => host.render('a')).toThrow(new Error('a'));
-
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
@@ -487,14 +438,13 @@ describe('Host', () => {
       return [arg1, arg2];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a', 0)).toEqual([['a', 0]]);
     expect(host.render('a', 0)).toEqual([['a', 0]]);
     expect(host.render('a', 1)).toEqual([['a', 1]]);
     expect(host.render('b', 1)).toEqual([['b', 1]]);
     expect(host.render('b', 1)).toEqual([['b', 1]]);
-
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(3);
     expect(hook).toHaveBeenCalledTimes(5);
@@ -505,14 +455,15 @@ describe('Host', () => {
       return Hooks.useMemo(() => arg, []);
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(host.render('b')).toEqual(['a']);
+
     host.reset();
+
     expect(host.render('c')).toEqual(['c']);
     expect(host.render('d')).toEqual(['c']);
-
     expect(hook).toHaveBeenCalledTimes(4);
   });
 
@@ -527,14 +478,13 @@ describe('Host', () => {
       return value;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(host.render('b')).toEqual(['a']);
     expect(() => host.render('c')).toThrow(new Error('c'));
     expect(host.render('d')).toEqual(['d']);
     expect(host.render('e')).toEqual(['d']);
-
     expect(hook).toHaveBeenCalledTimes(5);
   });
 
@@ -554,19 +504,13 @@ describe('Host', () => {
       return value;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(host.render('b')).toEqual(['a']);
-
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(0);
-    await macrotask();
-    expect(onAsyncStateChange).toHaveBeenCalledTimes(1);
-    expect(onAsyncStateChange).toHaveBeenCalledWith(new Error('b'));
-
+    await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('b'));
     expect(host.render('c')).toEqual(['c']);
     expect(host.render('d')).toEqual(['c']);
-
     expect(hook).toHaveBeenCalledTimes(4);
   });
 
@@ -594,7 +538,7 @@ describe('Host', () => {
     const callbackI = jest.fn();
     const callbackJ = jest.fn();
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render(callbackA, callbackB, 'a', 0)).toEqual([
       [callbackA, callbackB],
@@ -631,12 +575,11 @@ describe('Host', () => {
       return [ref1.current, ref2.current];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render()).toEqual([['a', 0]]);
     expect(host.render()).toEqual([['a', 1]]);
     expect(host.render()).toEqual([['a', 1]]);
-
     expect(hook).toBeCalledTimes(3);
   });
 
@@ -652,16 +595,15 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual([['a', 'a1']]);
     expect(host.render('b')).toEqual([['a', 'a1']]);
-
     expect(init).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('reducing a new state notifies the listener', () => {
+  test('reducing a new state resolves the promise', () => {
     const hook = jest.fn(() => {
       const [state, dispatch] = Hooks.useReducer(
         (previousState: string, action: string) => previousState + action,
@@ -676,14 +618,13 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render()).toEqual(['abc', 'a']);
-
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('reducing the same state does not notify the listener', () => {
+  test('reducing the same state does not resolve the promise', () => {
     const hook = jest.fn(() => {
       const [state, dispatch] = Hooks.useReducer(
         (previousState: string) => previousState,
@@ -698,10 +639,9 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render()).toEqual(['a']);
-
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
@@ -723,11 +663,10 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render()).toEqual(['ab', 'a']);
     expect(host.render()).toEqual(['ab']);
-
     expect(dispatchIdentities.size).toBe(1);
     expect(hook).toHaveBeenCalledTimes(3);
   });
@@ -744,7 +683,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -767,7 +706,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -789,7 +728,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -811,7 +750,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -833,7 +772,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -855,7 +794,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -879,7 +818,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook, {onAsyncStateChange});
+    const host = new Host<typeof hook>(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -905,12 +844,14 @@ describe('Host', () => {
       return state;
     };
 
-    const host1 = new Host<typeof hook1>(hook1, {onAsyncStateChange});
-    const host2 = new Host<typeof hook2>(hook2, {onAsyncStateChange});
+    const host1 = new Host<typeof hook1>(hook1);
+    const host2 = new Host<typeof hook2>(hook2);
 
     expect(host1.render('a')).toEqual(['a']);
     expect(host2.render(0)).toEqual([0]);
+
     host1.reset();
+
     expect(host1.render('b')).toEqual(['b']);
     expect(host2.render(1)).toEqual([0]);
   });

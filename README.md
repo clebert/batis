@@ -30,8 +30,8 @@ Batis essentially revolves around the concept of a Hook and its host. A Hook is
 comparable to a biological virus. A virus is dependent on a host cell because it
 has no metabolism of its own. So, in a figurative sense, a host is also needed
 to make use of a functional stateless Hook. A host manages the state and side
-effects of a Hook and notifies a listener function of asynchronous state changes
-that should result in a re-render.
+effects of a Hook and notifies of asynchronous state changes that should result
+in a re-render.
 
 ## Getting started
 
@@ -70,21 +70,21 @@ function useGreeting(salutation) {
 ```
 
 ```js
-const greeting = new Host(useGreeting, {
-  onAsyncStateChange(error) {
-    if (!error) {
-      console.log(greeting.render('Ciao')); // 5: ['Ciao Janie and Johnny']
-    }
-  },
-});
+(async () => {
+  const greeting = new Host(useGreeting);
 
-console.log(greeting.render('Hello')); // 1: ['Hello Jane', 'Hello John']
-console.log(greeting.render('Bonjour')); // 2: ['Bonjour Jane']
+  console.log(greeting.render('Hello')); // ['Hello Jane', 'Hello John']
+  console.log(greeting.render('Bonjour')); // ['Bonjour Jane']
 
-greeting.reset();
+  greeting.reset();
 
-console.log(greeting.render('Hallo')); // 3: ['Hallo Jane', 'Hallo John']
-console.log(greeting.render('Hola')); // 4: ['Hola Jane']
+  console.log(greeting.render('Hallo')); // ['Hallo Jane', 'Hallo John']
+  console.log(greeting.render('Hola')); // ['Hola Jane']
+
+  await greeting.nextAsyncStateChange;
+
+  console.log(greeting.render('Ciao')); // ['Ciao Janie and Johnny']
+})().catch((error) => console.error('Oops!', error));
 ```
 
 ### Testing React/Preact Hooks

@@ -1,5 +1,5 @@
-import {isFunction} from './is-function.js';
-import {isTypeOf} from './is-type-of.js';
+import {isFunction} from './is-function';
+import {isTypeOf} from './is-type-of';
 
 export type MemoryCell =
   | EffectMemoryCell

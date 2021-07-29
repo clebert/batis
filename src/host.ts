@@ -1,5 +1,6 @@
-import {areDependenciesEqual} from './are-dependencies-equal.js';
-import {isFunction} from './is-function.js';
+import {areDependenciesEqual} from './are-dependencies-equal';
+import {Deferred, defer} from './defer';
+import {isFunction} from './is-function';
 import {
   Effect,
   EffectMemoryCell,
@@ -7,7 +8,7 @@ import {
   Memory,
   SetState,
   StateMemoryCell,
-} from './memory.js';
+} from './memory';
 
 export interface BatisHooks {
   useState<TState>(
@@ -49,10 +50,6 @@ export type Dispatch<TAction> = (action: TAction) => void;
 export type ReducerInit<TArg, TState> = (initialArg: TArg) => TState;
 export type AnyHook = (...args: any[]) => any;
 
-export interface HostOptions {
-  onAsyncStateChange?(error?: unknown): void;
-}
-
 export class Host<THook extends AnyHook> {
   static readonly Hooks: BatisHooks = {
     useState<TState>(
@@ -73,11 +70,12 @@ export class Host<THook extends AnyHook> {
                 .then(() => {
                   try {
                     if (host.#memory.applyStateChanges()) {
-                      host.#options.onAsyncStateChange?.();
+                      host.#onAsyncStateChange();
                     }
                   } catch (error: unknown) {
-                    host.reset();
-                    host.#options.onAsyncStateChange?.(error);
+                    host.#onAsyncStateChange(
+                      error instanceof Error ? error : new Error(String(error))
+                    );
                   }
                 })
                 .catch();
@@ -182,11 +180,19 @@ export class Host<THook extends AnyHook> {
 
   readonly #memory = new Memory();
   readonly #hook: THook;
-  readonly #options: HostOptions;
 
-  constructor(hook: THook, options: HostOptions = {}) {
+  #nextAsyncStateChange: Deferred<void> | undefined;
+
+  constructor(hook: THook) {
     this.#hook = hook;
-    this.#options = options;
+  }
+
+  get nextAsyncStateChange(): Promise<void> {
+    if (!this.#nextAsyncStateChange) {
+      this.#nextAsyncStateChange = defer();
+    }
+
+    return this.#nextAsyncStateChange.promise;
   }
 
   render(
@@ -235,5 +241,18 @@ export class Host<THook extends AnyHook> {
    */
   reset(): void {
     this.#memory.reset(true);
+  }
+
+  #onAsyncStateChange(error?: Error): void {
+    try {
+      if (error) {
+        this.reset();
+        this.#nextAsyncStateChange?.reject(error);
+      } else {
+        this.#nextAsyncStateChange?.resolve();
+      }
+    } finally {
+      this.#nextAsyncStateChange = undefined;
+    }
   }
 }
