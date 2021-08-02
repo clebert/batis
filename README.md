@@ -48,12 +48,14 @@ import {Host} from 'batis';
 ```
 
 ```js
-const {Hooks} = Host;
+const {
+  Hooks: {useEffect, useMemo, useState},
+} = Host;
 
 function useGreeting(salutation) {
-  const [name, setName] = Hooks.useState('John');
+  const [name, setName] = useState('John');
 
-  Hooks.useEffect(() => {
+  useEffect(() => {
     setName('Jane');
 
     setTimeout(() => {
@@ -65,7 +67,7 @@ function useGreeting(salutation) {
     }, 10);
   }, []);
 
-  return Hooks.useMemo(() => `${salutation} ${name}`, [salutation, name]);
+  return useMemo(() => `${salutation} ${name}`, [salutation, name]);
 }
 ```
 

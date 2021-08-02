@@ -5,8 +5,7 @@
     "**/.DS_Store": true,
     "**/coverage": true,
     "**/lib": true,
-    "**/node_modules": true,
-    "**/tsconfig.tsbuildinfo": true
+    "**/node_modules": true
   },
   "tslint.jsEnable": true,
   "typescript.tsdk": "node_modules/typescript/lib"
