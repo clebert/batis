@@ -203,6 +203,8 @@ export class Host<THook extends AnyHook> {
 
       let results: [ReturnType<THook>, ...ReturnType<THook>[]] | undefined;
 
+      this.#memory.applyStateChanges();
+
       do {
         do {
           try {

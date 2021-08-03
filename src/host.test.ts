@@ -15,7 +15,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual([['a', 1]]);
     expect(host.render('b')).toEqual([['a', 1]]);
@@ -35,7 +35,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual([['a', 1]]);
     expect(host.render('b')).toEqual([['a', 1]]);
@@ -63,7 +63,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual([['a', 1]]);
     expect(() => host.render('b')).toThrow(new Error('b'));
@@ -92,7 +92,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual([['a', 1]]);
     expect(host.render('b')).toEqual([['a', 1]]);
@@ -140,7 +140,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render()).toEqual([
       ['c', 4],
@@ -191,7 +191,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render()).toEqual([['a', 0]]);
     expect(hook).toHaveBeenCalledTimes(1);
@@ -222,12 +222,29 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(() => host.render('a')).toThrow(new Error('a'));
     expect(() => host.render('b')).toThrow(new Error('b'));
     expect(host.render('c')).toEqual(['c']);
     await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('c'));
+    expect(hook).toHaveBeenCalledTimes(3);
+  });
+
+  test('synchronous external state changes are applied before re-rendering', () => {
+    const hook = jest.fn(() => Hooks.useState('a'));
+    const host = new Host(hook);
+    const [[state1, setState]] = host.render();
+
+    expect(state1).toBe('a');
+
+    const createState = jest.fn(() => 'b');
+
+    setState(createState);
+    expect(createState).toHaveBeenCalledTimes(0);
+    expect(host.render()).toEqual([['b', setState]]);
+    expect(host.render()).toEqual([['b', setState]]);
+    expect(createState).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
@@ -250,7 +267,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['b', 'a']);
     expect(host.render('c')).toEqual(['b']);
@@ -285,7 +302,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(() => host.render('a')).toThrow(new Error('b'));
     expect(host.render('c')).toEqual(['d', 'c']);
@@ -312,7 +329,7 @@ describe('Host', () => {
     });
 
     const consoleError = jest.spyOn(console, 'error');
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a', 0)).toEqual([['a', 0]]);
     expect(host.render('a', 0)).toEqual([['a', 0]]);
@@ -341,7 +358,7 @@ describe('Host', () => {
       Hooks.useEffect(effect, []);
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render()).toEqual([undefined]);
     expect(host.render()).toEqual([undefined]);
@@ -369,7 +386,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(() => host.render('b')).toThrow(new Error('b'));
@@ -400,7 +417,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(host.render('b')).toEqual(['b']);
@@ -421,7 +438,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(() => host.render('a')).toThrow(new Error('a'));
     expect(hook).toHaveBeenCalledTimes(1);
@@ -438,7 +455,7 @@ describe('Host', () => {
       return [arg1, arg2];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a', 0)).toEqual([['a', 0]]);
     expect(host.render('a', 0)).toEqual([['a', 0]]);
@@ -455,7 +472,7 @@ describe('Host', () => {
       return Hooks.useMemo(() => arg, []);
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(host.render('b')).toEqual(['a']);
@@ -478,7 +495,7 @@ describe('Host', () => {
       return value;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(host.render('b')).toEqual(['a']);
@@ -504,7 +521,7 @@ describe('Host', () => {
       return value;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
     expect(host.render('b')).toEqual(['a']);
@@ -538,7 +555,7 @@ describe('Host', () => {
     const callbackI = jest.fn();
     const callbackJ = jest.fn();
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render(callbackA, callbackB, 'a', 0)).toEqual([
       [callbackA, callbackB],
@@ -575,7 +592,7 @@ describe('Host', () => {
       return [ref1.current, ref2.current];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render()).toEqual([['a', 0]]);
     expect(host.render()).toEqual([['a', 1]]);
@@ -595,7 +612,7 @@ describe('Host', () => {
       return [state1, state2];
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual([['a', 'a1']]);
     expect(host.render('b')).toEqual([['a', 'a1']]);
@@ -618,7 +635,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render()).toEqual(['abc', 'a']);
     expect(hook).toHaveBeenCalledTimes(2);
@@ -639,7 +656,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render()).toEqual(['a']);
     expect(hook).toHaveBeenCalledTimes(1);
@@ -663,7 +680,7 @@ describe('Host', () => {
       return state;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render()).toEqual(['ab', 'a']);
     expect(host.render()).toEqual(['ab']);
@@ -683,7 +700,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -706,7 +723,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -728,7 +745,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -750,7 +767,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -772,7 +789,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -794,7 +811,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -818,7 +835,7 @@ describe('Host', () => {
       return arg;
     });
 
-    const host = new Host<typeof hook>(hook);
+    const host = new Host(hook);
 
     expect(host.render('a')).toEqual(['a']);
 
@@ -844,8 +861,8 @@ describe('Host', () => {
       return state;
     };
 
-    const host1 = new Host<typeof hook1>(hook1);
-    const host2 = new Host<typeof hook2>(hook2);
+    const host1 = new Host(hook1);
+    const host2 = new Host(hook2);
 
     expect(host1.render('a')).toEqual(['a']);
     expect(host2.render(0)).toEqual([0]);
