@@ -72,21 +72,19 @@ function useGreeting(salutation) {
 ```
 
 ```js
-(async () => {
-  const greeting = new Host(useGreeting);
+const greeting = new Host(useGreeting);
 
-  console.log(greeting.render('Hello')); // ['Hello Jane', 'Hello John']
-  console.log(greeting.render('Bonjour')); // ['Bonjour Jane']
+console.log(greeting.render('Hello')); // ['Hello Jane', 'Hello John']
+console.log(greeting.render('Bonjour')); // ['Bonjour Jane']
 
-  greeting.reset();
+greeting.reset();
 
-  console.log(greeting.render('Hallo')); // ['Hallo Jane', 'Hallo John']
-  console.log(greeting.render('Hola')); // ['Hola Jane']
+console.log(greeting.render('Hallo')); // ['Hallo Jane', 'Hallo John']
+console.log(greeting.render('Hola')); // ['Hola Jane']
 
-  await greeting.nextAsyncStateChange;
+await greeting.nextAsyncStateChange;
 
-  console.log(greeting.render('Ciao')); // ['Ciao Janie and Johnny']
-})().catch((error) => console.error('Oops!', error));
+console.log(greeting.render('Ciao')); // ['Ciao Janie and Johnny']
 ```
 
 ### Testing React/Preact Hooks
