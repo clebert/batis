@@ -65,7 +65,7 @@ export class Host<THook extends AnyHook> {
           setState: (state) => {
             memoryCell!.stateChanges = [...memoryCell!.stateChanges, state];
 
-            if (!Host.#rendering) {
+            if (!Host.#running) {
               Promise.resolve()
                 .then(() => {
                   try {
@@ -167,7 +167,7 @@ export class Host<THook extends AnyHook> {
     },
   };
 
-  static #rendering = false;
+  static #running = false;
   static #activeHost: Host<AnyHook> | undefined;
 
   static #getActiveHost(): Host<AnyHook> {
@@ -195,11 +195,20 @@ export class Host<THook extends AnyHook> {
     return this.#nextAsyncStateChange.promise;
   }
 
+  /**
+   * @deprecated This method will be removed in one of the next versions.
+   */
   render(
     ...args: Parameters<THook>
   ): readonly [ReturnType<THook>, ...ReturnType<THook>[]] {
+    return this.run(...args);
+  }
+
+  run(
+    ...args: Parameters<THook>
+  ): readonly [ReturnType<THook>, ...ReturnType<THook>[]] {
     try {
-      Host.#rendering = true;
+      Host.#running = true;
 
       let results: [ReturnType<THook>, ...ReturnType<THook>[]] | undefined;
 
@@ -233,13 +242,13 @@ export class Host<THook extends AnyHook> {
 
       throw error;
     } finally {
-      Host.#rendering = false;
+      Host.#running = false;
     }
   }
 
   /**
    * Reset the state and clean up all side effects.
-   * The next rendering will start from scratch.
+   * The next run will start from scratch.
    */
   reset(): void {
     this.#memory.reset(true);

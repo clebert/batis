@@ -31,7 +31,7 @@ comparable to a biological virus. A virus is dependent on a host cell because it
 has no metabolism of its own. So, in a figurative sense, a host is also needed
 to make use of a functional stateless Hook. A host manages the state and side
 effects of a Hook and notifies of asynchronous state changes that should result
-in a re-render.
+in another run.
 
 ## Getting started
 
@@ -74,17 +74,17 @@ function useGreeting(salutation) {
 ```js
 const greeting = new Host(useGreeting);
 
-console.log(greeting.render('Hello')); // ['Hello Jane', 'Hello John']
-console.log(greeting.render('Bonjour')); // ['Bonjour Jane']
+console.log(greeting.run('Hello')); // ['Hello Jane', 'Hello John']
+console.log(greeting.run('Bonjour')); // ['Bonjour Jane']
 
 greeting.reset();
 
-console.log(greeting.render('Hallo')); // ['Hallo Jane', 'Hallo John']
-console.log(greeting.render('Hola')); // ['Hola Jane']
+console.log(greeting.run('Hallo')); // ['Hallo Jane', 'Hallo John']
+console.log(greeting.run('Hola')); // ['Hola Jane']
 
 await greeting.nextAsyncStateChange;
 
-console.log(greeting.render('Ciao')); // ['Ciao Janie and Johnny']
+console.log(greeting.run('Ciao')); // ['Ciao Janie and Johnny']
 ```
 
 ### Testing React/Preact Hooks

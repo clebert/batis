@@ -17,7 +17,7 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual([['a', 1]]);
+    expect(host.run('a')).toEqual([['a', 1]]);
     expect(host.render('b')).toEqual([['a', 1]]);
     expect(createInitialState).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(2);
@@ -37,12 +37,12 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual([['a', 1]]);
-    expect(host.render('b')).toEqual([['a', 1]]);
+    expect(host.run('a')).toEqual([['a', 1]]);
+    expect(host.run('b')).toEqual([['a', 1]]);
 
     host.reset();
 
-    expect(host.render('c')).toEqual([['c', 2]]);
+    expect(host.run('c')).toEqual([['c', 2]]);
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
@@ -65,9 +65,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual([['a', 1]]);
-    expect(() => host.render('b')).toThrow(new Error('b'));
-    expect(host.render('c')).toEqual([['c', 2]]);
+    expect(host.run('a')).toEqual([['a', 1]]);
+    expect(() => host.run('b')).toThrow(new Error('b'));
+    expect(host.run('c')).toEqual([['c', 2]]);
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
@@ -94,10 +94,10 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual([['a', 1]]);
-    expect(host.render('b')).toEqual([['a', 1]]);
+    expect(host.run('a')).toEqual([['a', 1]]);
+    expect(host.run('b')).toEqual([['a', 1]]);
     await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('b'));
-    expect(host.render('c')).toEqual([['c', 2]]);
+    expect(host.run('c')).toEqual([['c', 2]]);
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
@@ -142,7 +142,7 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render()).toEqual([
+    expect(host.run()).toEqual([
       ['c', 4],
       ['b', 2],
       ['a', 0],
@@ -154,7 +154,7 @@ describe('Host', () => {
 
     await nextAsyncStateChange1;
 
-    expect(host.render()).toEqual([
+    expect(host.run()).toEqual([
       ['e', 8],
       ['d', 6],
     ]);
@@ -165,7 +165,7 @@ describe('Host', () => {
 
     await nextAsyncStateChange2;
 
-    expect(host.render()).toEqual([['f', 10]]);
+    expect(host.run()).toEqual([['f', 10]]);
     expect(hook).toHaveBeenCalledTimes(6);
   });
 
@@ -193,7 +193,7 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render()).toEqual([['a', 0]]);
+    expect(host.run()).toEqual([['a', 0]]);
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
@@ -224,17 +224,17 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(() => host.render('a')).toThrow(new Error('a'));
-    expect(() => host.render('b')).toThrow(new Error('b'));
-    expect(host.render('c')).toEqual(['c']);
+    expect(() => host.run('a')).toThrow(new Error('a'));
+    expect(() => host.run('b')).toThrow(new Error('b'));
+    expect(host.run('c')).toEqual(['c']);
     await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('c'));
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
-  test('synchronous external state changes are applied before re-rendering', () => {
+  test('synchronous external state changes are applied before another run', () => {
     const hook = jest.fn(() => Hooks.useState('a'));
     const host = new Host(hook);
-    const [[state1, setState]] = host.render();
+    const [[state1, setState]] = host.run();
 
     expect(state1).toBe('a');
 
@@ -242,8 +242,8 @@ describe('Host', () => {
 
     setState(createState);
     expect(createState).toHaveBeenCalledTimes(0);
-    expect(host.render()).toEqual([['b', setState]]);
-    expect(host.render()).toEqual([['b', setState]]);
+    expect(host.run()).toEqual([['b', setState]]);
+    expect(host.run()).toEqual([['b', setState]]);
     expect(createState).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(3);
   });
@@ -269,12 +269,12 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['b', 'a']);
-    expect(host.render('c')).toEqual(['b']);
+    expect(host.run('a')).toEqual(['b', 'a']);
+    expect(host.run('c')).toEqual(['b']);
 
     host.reset();
 
-    expect(host.render('c')).toEqual(['d', 'c']);
+    expect(host.run('c')).toEqual(['d', 'c']);
     expect(setStateIdentities.size).toBe(2);
     expect(hook).toHaveBeenCalledTimes(5);
   });
@@ -304,8 +304,8 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(() => host.render('a')).toThrow(new Error('b'));
-    expect(host.render('c')).toEqual(['d', 'c']);
+    expect(() => host.run('a')).toThrow(new Error('b'));
+    expect(host.run('c')).toEqual(['d', 'c']);
     expect(setStateIdentities.size).toBe(2);
     expect(hook).toHaveBeenCalledTimes(4);
   });
@@ -331,11 +331,11 @@ describe('Host', () => {
     const consoleError = jest.spyOn(console, 'error');
     const host = new Host(hook);
 
-    expect(host.render('a', 0)).toEqual([['a', 0]]);
-    expect(host.render('a', 0)).toEqual([['a', 0]]);
-    expect(host.render('a', 1)).toEqual([['a', 1]]);
-    expect(host.render('b', 1)).toEqual([['b', 1]]);
-    expect(host.render('b', 1)).toEqual([['b', 1]]);
+    expect(host.run('a', 0)).toEqual([['a', 0]]);
+    expect(host.run('a', 0)).toEqual([['a', 0]]);
+    expect(host.run('a', 1)).toEqual([['a', 1]]);
+    expect(host.run('b', 1)).toEqual([['b', 1]]);
+    expect(host.run('b', 1)).toEqual([['b', 1]]);
     expect(cleanUpEffect1).toHaveBeenCalledTimes(4);
     expect(cleanUpEffect3).toHaveBeenCalledTimes(2);
     expect(effect1).toHaveBeenCalledTimes(5);
@@ -360,13 +360,13 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render()).toEqual([undefined]);
-    expect(host.render()).toEqual([undefined]);
+    expect(host.run()).toEqual([undefined]);
+    expect(host.run()).toEqual([undefined]);
 
     host.reset();
 
-    expect(host.render()).toEqual([undefined]);
-    expect(host.render()).toEqual([undefined]);
+    expect(host.run()).toEqual([undefined]);
+    expect(host.run()).toEqual([undefined]);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(4);
@@ -388,10 +388,10 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
-    expect(() => host.render('b')).toThrow(new Error('b'));
-    expect(host.render('c')).toEqual(['c']);
-    expect(host.render('d')).toEqual(['d']);
+    expect(host.run('a')).toEqual(['a']);
+    expect(() => host.run('b')).toThrow(new Error('b'));
+    expect(host.run('c')).toEqual(['c']);
+    expect(host.run('d')).toEqual(['d']);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(4);
@@ -419,11 +419,11 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
-    expect(host.render('b')).toEqual(['b']);
+    expect(host.run('a')).toEqual(['a']);
+    expect(host.run('b')).toEqual(['b']);
     await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('b'));
-    expect(host.render('c')).toEqual(['c']);
-    expect(host.render('d')).toEqual(['d']);
+    expect(host.run('c')).toEqual(['c']);
+    expect(host.run('d')).toEqual(['d']);
     expect(cleanUpEffect).toHaveBeenCalledTimes(1);
     expect(effect).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(4);
@@ -440,7 +440,7 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(() => host.render('a')).toThrow(new Error('a'));
+    expect(() => host.run('a')).toThrow(new Error('a'));
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
@@ -457,11 +457,11 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a', 0)).toEqual([['a', 0]]);
-    expect(host.render('a', 0)).toEqual([['a', 0]]);
-    expect(host.render('a', 1)).toEqual([['a', 1]]);
-    expect(host.render('b', 1)).toEqual([['b', 1]]);
-    expect(host.render('b', 1)).toEqual([['b', 1]]);
+    expect(host.run('a', 0)).toEqual([['a', 0]]);
+    expect(host.run('a', 0)).toEqual([['a', 0]]);
+    expect(host.run('a', 1)).toEqual([['a', 1]]);
+    expect(host.run('b', 1)).toEqual([['b', 1]]);
+    expect(host.run('b', 1)).toEqual([['b', 1]]);
     expect(createValue1).toHaveBeenCalledTimes(1);
     expect(createValue2).toHaveBeenCalledTimes(3);
     expect(hook).toHaveBeenCalledTimes(5);
@@ -474,13 +474,13 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
-    expect(host.render('b')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
+    expect(host.run('b')).toEqual(['a']);
 
     host.reset();
 
-    expect(host.render('c')).toEqual(['c']);
-    expect(host.render('d')).toEqual(['c']);
+    expect(host.run('c')).toEqual(['c']);
+    expect(host.run('d')).toEqual(['c']);
     expect(hook).toHaveBeenCalledTimes(4);
   });
 
@@ -497,11 +497,11 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
-    expect(host.render('b')).toEqual(['a']);
-    expect(() => host.render('c')).toThrow(new Error('c'));
-    expect(host.render('d')).toEqual(['d']);
-    expect(host.render('e')).toEqual(['d']);
+    expect(host.run('a')).toEqual(['a']);
+    expect(host.run('b')).toEqual(['a']);
+    expect(() => host.run('c')).toThrow(new Error('c'));
+    expect(host.run('d')).toEqual(['d']);
+    expect(host.run('e')).toEqual(['d']);
     expect(hook).toHaveBeenCalledTimes(5);
   });
 
@@ -523,11 +523,11 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
-    expect(host.render('b')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
+    expect(host.run('b')).toEqual(['a']);
     await expect(host.nextAsyncStateChange).rejects.toEqual(new Error('b'));
-    expect(host.render('c')).toEqual(['c']);
-    expect(host.render('d')).toEqual(['c']);
+    expect(host.run('c')).toEqual(['c']);
+    expect(host.run('d')).toEqual(['c']);
     expect(hook).toHaveBeenCalledTimes(4);
   });
 
@@ -557,23 +557,23 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render(callbackA, callbackB, 'a', 0)).toEqual([
+    expect(host.run(callbackA, callbackB, 'a', 0)).toEqual([
       [callbackA, callbackB],
     ]);
 
-    expect(host.render(callbackC, callbackD, 'a', 0)).toEqual([
+    expect(host.run(callbackC, callbackD, 'a', 0)).toEqual([
       [callbackA, callbackB],
     ]);
 
-    expect(host.render(callbackE, callbackF, 'a', 1)).toEqual([
+    expect(host.run(callbackE, callbackF, 'a', 1)).toEqual([
       [callbackA, callbackF],
     ]);
 
-    expect(host.render(callbackG, callbackH, 'b', 1)).toEqual([
+    expect(host.run(callbackG, callbackH, 'b', 1)).toEqual([
       [callbackA, callbackH],
     ]);
 
-    expect(host.render(callbackI, callbackJ, 'b', 1)).toEqual([
+    expect(host.run(callbackI, callbackJ, 'b', 1)).toEqual([
       [callbackA, callbackH],
     ]);
 
@@ -594,9 +594,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render()).toEqual([['a', 0]]);
-    expect(host.render()).toEqual([['a', 1]]);
-    expect(host.render()).toEqual([['a', 1]]);
+    expect(host.run()).toEqual([['a', 0]]);
+    expect(host.run()).toEqual([['a', 1]]);
+    expect(host.run()).toEqual([['a', 1]]);
     expect(hook).toBeCalledTimes(3);
   });
 
@@ -614,8 +614,8 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual([['a', 'a1']]);
-    expect(host.render('b')).toEqual([['a', 'a1']]);
+    expect(host.run('a')).toEqual([['a', 'a1']]);
+    expect(host.run('b')).toEqual([['a', 'a1']]);
     expect(init).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(2);
   });
@@ -637,7 +637,7 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render()).toEqual(['abc', 'a']);
+    expect(host.run()).toEqual(['abc', 'a']);
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
@@ -658,7 +658,7 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render()).toEqual(['a']);
+    expect(host.run()).toEqual(['a']);
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
@@ -682,8 +682,8 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render()).toEqual(['ab', 'a']);
-    expect(host.render()).toEqual(['ab']);
+    expect(host.run()).toEqual(['ab', 'a']);
+    expect(host.run()).toEqual(['ab']);
     expect(dispatchIdentities.size).toBe(1);
     expect(hook).toHaveBeenCalledTimes(3);
   });
@@ -702,9 +702,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
 
-    expect(() => host.render('b')).toThrow(
+    expect(() => host.run('b')).toThrow(
       new Error('The number of Hooks used must not change.')
     );
 
@@ -725,9 +725,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
 
-    expect(() => host.render('b')).toThrow(
+    expect(() => host.run('b')).toThrow(
       new Error('The number of Hooks used must not change.')
     );
 
@@ -747,9 +747,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
 
-    expect(() => host.render('b')).toThrow(
+    expect(() => host.run('b')).toThrow(
       new Error('The order of the Hooks used must not change.')
     );
 
@@ -769,9 +769,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
 
-    expect(() => host.render('b')).toThrow(
+    expect(() => host.run('b')).toThrow(
       new Error('The existence of dependencies of a Hook must not change.')
     );
 
@@ -791,9 +791,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
 
-    expect(() => host.render('b')).toThrow(
+    expect(() => host.run('b')).toThrow(
       new Error('The existence of dependencies of a Hook must not change.')
     );
 
@@ -813,9 +813,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
 
-    expect(() => host.render('b')).toThrow(
+    expect(() => host.run('b')).toThrow(
       new Error(
         'The order and number of dependencies of a Hook must not change.'
       )
@@ -837,9 +837,9 @@ describe('Host', () => {
 
     const host = new Host(hook);
 
-    expect(host.render('a')).toEqual(['a']);
+    expect(host.run('a')).toEqual(['a']);
 
-    expect(() => host.render('b')).toThrow(
+    expect(() => host.run('b')).toThrow(
       new Error(
         'The order and number of dependencies of a Hook must not change.'
       )
@@ -864,13 +864,13 @@ describe('Host', () => {
     const host1 = new Host(hook1);
     const host2 = new Host(hook2);
 
-    expect(host1.render('a')).toEqual(['a']);
-    expect(host2.render(0)).toEqual([0]);
+    expect(host1.run('a')).toEqual(['a']);
+    expect(host2.run(0)).toEqual([0]);
 
     host1.reset();
 
-    expect(host1.render('b')).toEqual(['b']);
-    expect(host2.render(1)).toEqual([0]);
+    expect(host1.run('b')).toEqual(['b']);
+    expect(host2.run(1)).toEqual([0]);
   });
 
   test('using a Hook without an active host causes an error', () => {
@@ -881,19 +881,19 @@ describe('Host', () => {
     expect(() => Hooks.useMemo(jest.fn(), [])).toThrow(error);
 
     expect(() =>
-      new Host(() => Hooks.useEffect(() => void Hooks.useState('a'))).render()
+      new Host(() => Hooks.useEffect(() => void Hooks.useState('a'))).run()
     ).toThrow(error);
 
     expect(() =>
       new Host(() =>
         Hooks.useEffect(() => void Hooks.useEffect(jest.fn()))
-      ).render()
+      ).run()
     ).toThrow(error);
 
     expect(() =>
       new Host(() =>
         Hooks.useEffect(() => void Hooks.useMemo(jest.fn(), []))
-      ).render()
+      ).run()
     ).toThrow(error);
   });
 });
