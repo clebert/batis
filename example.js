@@ -1,10 +1,12 @@
 // @ts-check
 
-const {Host} = require('./lib/cjs');
-
 const {
-  Hooks: {useEffect, useMemo, useState},
-} = Host;
+  Host,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} = require('./lib/cjs');
 
 /**
  * @param {string} salutation
@@ -12,16 +14,20 @@ const {
 function useGreeting(salutation) {
   const [name, setName] = useState('John');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setName('Jane');
+  }, []);
 
-    setTimeout(() => {
+  useEffect(() => {
+    const handle = setTimeout(() => {
       // Unlike React, Batis always applies all state changes, whether
       // synchronous or asynchronous, in batches. Therefore, Janie is not
       // greeted individually.
       setName('Janie');
       setName((prevName) => `${prevName} and Johnny`);
     }, 10);
+
+    return () => clearTimeout(handle);
   }, []);
 
   return useMemo(() => `${salutation} ${name}`, [salutation, name]);

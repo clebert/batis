@@ -23,15 +23,14 @@ General reactive JavaScript programming using the idea of
 Even though React Hooks are actually a constrained solution for using state and
 side effects in functional stateless components, they have proven to be very
 elegant in their design. I wanted to use this kind of reactive programming in
-areas other than web UI development, so I wrote Batis. It turns out that Batis
-is also good for testing React/Preact Hooks.
+areas other than web UI development, so I wrote Batis.
 
 Batis essentially revolves around the concept of a Hook and its host. A Hook is
 comparable to a biological virus. A virus is dependent on a host cell because it
 has no metabolism of its own. So, in a figurative sense, a host is also needed
-to make use of a functional stateless Hook. A host manages the state and side
-effects of a Hook and notifies of asynchronous state changes that should result
-in another run.
+to make use of a functional stateless Hook. A host manages the state and effects
+of a Hook and notifies of asynchronous state changes that should result in
+another run.
 
 ## Getting started
 
@@ -44,27 +43,27 @@ npm install batis --save
 ### Using Batis
 
 ```js
-import {Host} from 'batis';
+import {Host, useEffect, useLayoutEffect, useMemo, useState} from 'batis';
 ```
 
 ```js
-const {
-  Hooks: {useEffect, useMemo, useState},
-} = Host;
-
 function useGreeting(salutation) {
   const [name, setName] = useState('John');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setName('Jane');
+  }, []);
 
-    setTimeout(() => {
+  useEffect(() => {
+    const handle = setTimeout(() => {
       // Unlike React, Batis always applies all state changes, whether
       // synchronous or asynchronous, in batches. Therefore, Janie is not
       // greeted individually.
       setName('Janie');
       setName((prevName) => `${prevName} and Johnny`);
     }, 10);
+
+    return () => clearTimeout(handle);
   }, []);
 
   return useMemo(() => `${salutation} ${name}`, [salutation, name]);
@@ -87,26 +86,6 @@ await greeting.nextAsyncStateChange;
 console.log(greeting.run('Ciao')); // ['Ciao Janie and Johnny']
 ```
 
-### Testing React/Preact Hooks
-
-You can use Batis to test your React/Preact Hooks, as long as the Hooks you are
-testing only use the subset of React Hooks implemented by Batis. A test with
-[Jest](https://jestjs.io) can be set up as follows:
-
-```js
-import {Host} from 'batis';
-```
-
-```js
-import * as React from 'react';
-
-jest.mock('react', () => ({...React, ...Host.Hooks}));
-```
-
-```js
-jest.mock('preact/hooks', () => Host.Hooks);
-```
-
 ## API reference
 
 The [React Hooks API reference](https://reactjs.org/docs/hooks-reference.html)
@@ -116,36 +95,29 @@ also applies to this library and should be consulted.
 
 Below you can see the subset of React Hooks implemented by Batis:
 
-| React Hook                                   | Status                        |
-| -------------------------------------------- | ----------------------------- |
-| [`useState`][usestate]                       | ✅Implemented                 |
-| [`useEffect`][useeffect]                     | ✅Implemented                 |
-| [`useMemo`][usememo]                         | ✅Implemented                 |
-| [`useCallback`][usecallback]                 | ✅Implemented                 |
-| [`useRef`][useref]                           | ✅Implemented                 |
-| [`useReducer`][usereducer]                   | ✅Implemented                 |
-| [`useContext`][usecontext]                   | ❌Not planned                 |
-| [`useImperativeHandle`][useimperativehandle] | ❌Not planned                 |
-| [`useLayoutEffect`][uselayouteffect]         | ❌Not planned, see note below |
-| [`useDebugValue`][usedebugvalue]             | ❌Not planned                 |
-
-**Note:** React executes effects declared using the `useEffect` Hook as a
-macrotask so that they do not block browser rendering. The `useLayoutEffect`
-Hook acts as the synchronous alternative to allow potential DOM changes before
-browser rendering. In Batis, effects are executed always synchronously, so the
-special `useLayoutEffect` Hook is not necessary. For compatibility reasons,
-`useEffect` could be used as an alias for `useLayoutEffect`.
+| React Hook                                   | Status            |
+| -------------------------------------------- | ----------------- |
+| [`useState`][usestate]                       | ✅Implemented     |
+| [`useEffect`][useeffect]                     | ✅Implemented     |
+| [`useLayoutEffect`][uselayouteffect]         | ✅Implemented     |
+| [`useMemo`][usememo]                         | ✅Implemented     |
+| [`useCallback`][usecallback]                 | ✅Implemented     |
+| [`useRef`][useref]                           | ✅Implemented     |
+| [`useReducer`][usereducer]                   | ✅Implemented     |
+| [`useContext`][usecontext]                   | ❌Not implemented |
+| [`useImperativeHandle`][useimperativehandle] | ❌Not implemented |
+| [`useDebugValue`][usedebugvalue]             | ❌Not implemented |
 
 [usestate]: https://reactjs.org/docs/hooks-reference.html#usestate
 [useeffect]: https://reactjs.org/docs/hooks-reference.html#useeffect
-[usecontext]: https://reactjs.org/docs/hooks-reference.html#usecontext
-[usereducer]: https://reactjs.org/docs/hooks-reference.html#usereducer
-[usecallback]: https://reactjs.org/docs/hooks-reference.html#usecallback
+[uselayouteffect]: https://reactjs.org/docs/hooks-reference.html#uselayouteffect
 [usememo]: https://reactjs.org/docs/hooks-reference.html#usememo
+[usecallback]: https://reactjs.org/docs/hooks-reference.html#usecallback
 [useref]: https://reactjs.org/docs/hooks-reference.html#useref
+[usereducer]: https://reactjs.org/docs/hooks-reference.html#usereducer
+[usecontext]: https://reactjs.org/docs/hooks-reference.html#usecontext
 [useimperativehandle]:
   https://reactjs.org/docs/hooks-reference.html#useimperativehandle
-[uselayouteffect]: https://reactjs.org/docs/hooks-reference.html#uselayouteffect
 [usedebugvalue]: https://reactjs.org/docs/hooks-reference.html#usedebugvalue
 
 ---
