@@ -1,4 +1,4 @@
-import {Host, useLayoutEffect, useState} from '..';
+import {Host, useEffect, useLayoutEffect, useState} from '..';
 
 describe('useState()', () => {
   test('an initial state is set only once', () => {
@@ -198,7 +198,7 @@ describe('useState()', () => {
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
-  test('a failed setting of a state causes an error', async () => {
+  test('a failed state update causes an error', async () => {
     const hook = jest.fn((arg: string) => {
       const [state, setState] = useState(() => {
         if (arg === 'a') {
@@ -214,12 +214,6 @@ describe('useState()', () => {
         });
       }
 
-      setTimeout(() => {
-        setState(() => {
-          throw arg;
-        });
-      });
-
       return state;
     });
 
@@ -228,10 +222,6 @@ describe('useState()', () => {
     expect(() => host.run('a')).toThrow(new Error('a'));
     expect(() => host.run('b')).toThrow(new Error('b'));
     expect(host.run('c')).toEqual(['c']);
-
-    await host.nextAsyncStateChange;
-
-    expect(() => host.run('d')).toThrow(new Error('c'));
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
@@ -312,5 +302,33 @@ describe('useState()', () => {
     expect(host.run('c')).toEqual(['d', 'c']);
     expect(setStateIdentities.size).toBe(2);
     expect(hook).toHaveBeenCalledTimes(4);
+  });
+
+  test('updating a disposed state causes an error', async () => {
+    expect.assertions(2);
+
+    const hook = jest.fn(() => {
+      const [, setState] = useState('a');
+
+      useEffect(
+        () =>
+          void setTimeout(() =>
+            expect(() => setState('b')).toThrow(
+              new Error('A disposed state cannot be updated.')
+            )
+          ),
+        []
+      );
+    });
+
+    const host = new Host(hook);
+
+    host.run();
+    host.triggerAsyncEffects();
+    host.reset();
+
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(hook).toHaveBeenCalledTimes(1);
   });
 });

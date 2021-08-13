@@ -30,12 +30,14 @@ class StateSlotImpl<TState> implements StateSlot<TState> {
 
   constructor(host: Host<AnyHook>, public state: TState) {
     this.setState = (newState) => {
-      if (!this.disposed) {
-        this.newStates.push(newState);
-        clearTimeout(this.timeoutHandle);
-
-        this.timeoutHandle = setTimeout(() => host.onAsyncStateChange());
+      if (this.disposed) {
+        throw new Error('A disposed state cannot be updated.');
       }
+
+      this.newStates.push(newState);
+      clearTimeout(this.timeoutHandle);
+
+      this.timeoutHandle = setTimeout(() => host.onAsyncStateChange());
     };
   }
 
