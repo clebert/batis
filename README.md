@@ -21,16 +21,13 @@ General reactive JavaScript programming using the idea of
 ## Introduction
 
 Even though React Hooks are actually a constrained solution for using state and
-side effects in functional stateless components, they have proven to be very
-elegant in their design. I wanted to use this kind of reactive programming in
-areas other than web UI development, so I wrote Batis.
+managing side effects in functional stateless components, they have proven to be
+very elegant in their design. I wanted to use this kind of reactive programming
+in areas other than React development, so I wrote Batis.
 
-Batis essentially revolves around the concept of a Hook and its host. A Hook is
-comparable to a biological virus. A virus is dependent on a host cell because it
-has no metabolism of its own. So, in a figurative sense, a host is also needed
-to make use of a functional stateless Hook. A host manages the state and effects
-of a Hook and notifies of asynchronous state changes that should result in
-another run.
+Batis essentially revolves around the concept of a Hook and its host. Running a
+functional stateless Hook requires a host that manages the state and effects and
+reports asynchronous state changes that should result in a new run.
 
 ## Getting started
 
