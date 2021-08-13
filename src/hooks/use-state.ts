@@ -1,16 +1,28 @@
-import {AnyHook, CreateState, Host, SetState, StateSlot} from '../host';
+import {AnyHook, Host, Slot} from '../host';
 import {isFunction} from '../utils/is-function';
+
+/**
+ * Unlike React, Batis always applies all state changes, whether synchronous
+ * or asynchronous, in batches.
+ *
+ * See related React issue: https://github.com/facebook/react/issues/15027
+ */
+export type SetState<TState> = (newState: TState | CreateState<TState>) => void;
+export type CreateState<TState> = (prevState: TState) => TState;
 
 export function useState<TState>(
   initialState: TState | (() => TState)
 ): readonly [TState, SetState<TState>] {
   const host = Host.active;
 
-  let [slot, setSlot] = host.nextSlot<TState>('state');
+  let [slot, setSlot] = host.nextSlot(
+    (otherSlot: Slot): otherSlot is StateSlot<TState> =>
+      otherSlot instanceof StateSlot
+  );
 
   if (!slot) {
     slot = setSlot(
-      new StateSlotImpl(
+      new StateSlot(
         host,
         isFunction<() => TState>(initialState) ? initialState() : initialState
       )
@@ -20,8 +32,7 @@ export function useState<TState>(
   return [slot.state, slot.setState];
 }
 
-class StateSlotImpl<TState> implements StateSlot<TState> {
-  readonly type = 'state';
+class StateSlot<TState> implements Slot {
   readonly setState: SetState<TState>;
 
   private newStates: (TState | CreateState<TState>)[] = [];
@@ -56,6 +67,8 @@ class StateSlotImpl<TState> implements StateSlot<TState> {
 
     return !Object.is(prevState, this.state);
   }
+
+  triggerEffect(): void {}
 
   dispose(): void {
     clearTimeout(this.timeoutHandle);

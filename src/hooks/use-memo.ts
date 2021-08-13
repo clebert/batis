@@ -1,4 +1,4 @@
-import {Host, MemoSlot} from '../host';
+import {Host, Slot} from '../host';
 import {isUnchanged} from '../utils/is-unchanged';
 
 export function useMemo<TValue>(
@@ -7,26 +7,28 @@ export function useMemo<TValue>(
 ): TValue {
   const host = Host.active;
 
-  let [slot, setSlot] = host.nextSlot<TValue>('memo');
+  let [slot, setSlot] = host.nextSlot(
+    (otherSlot: Slot): otherSlot is MemoSlot<TValue> =>
+      otherSlot instanceof MemoSlot
+  );
 
   if (!slot) {
-    slot = setSlot(new MemoSlotImpl(createValue(), dependencies));
-  } else {
-    slot.update(createValue, dependencies);
+    slot = setSlot(new MemoSlot(createValue(), dependencies));
+  } else if (!isUnchanged(slot.dependencies, dependencies)) {
+    slot.value = createValue();
+    slot.dependencies = dependencies;
   }
 
   return slot.value;
 }
 
-class MemoSlotImpl<TValue> implements MemoSlot<TValue> {
-  readonly type = 'memo';
+class MemoSlot<TValue> implements Slot {
+  constructor(public value: TValue, public dependencies: readonly unknown[]) {}
 
-  constructor(public value: TValue, private dependencies: readonly unknown[]) {}
-
-  update(createValue: () => TValue, dependencies: readonly unknown[]): void {
-    if (!isUnchanged(this.dependencies, dependencies)) {
-      this.value = createValue();
-      this.dependencies = dependencies;
-    }
+  applyStateChanges(): boolean {
+    return false;
   }
+
+  triggerEffect(): void {}
+  dispose(): void {}
 }

@@ -1,5 +1,7 @@
-import {Effect, EffectSlot, Host} from '../host';
+import {Host, Slot} from '../host';
 import {isUnchanged} from '../utils/is-unchanged';
+
+export type Effect = () => (() => void) | void;
 
 export function useEffect(
   effect: Effect,
@@ -7,10 +9,13 @@ export function useEffect(
 ): void {
   const host = Host.active;
 
-  let [slot, setSlot] = host.nextSlot('async-effect');
+  let [slot, setSlot] = host.nextSlot(
+    (otherSlot: Slot): otherSlot is AsyncEffectSlot =>
+      otherSlot instanceof AsyncEffectSlot
+  );
 
   if (!slot) {
-    slot = setSlot(new AsyncEffectSlotImpl(effect, dependencies));
+    slot = setSlot(new AsyncEffectSlot(effect, dependencies));
   } else {
     slot.update(effect, dependencies);
   }
@@ -22,31 +27,29 @@ export function useLayoutEffect(
 ): void {
   const host = Host.active;
 
-  let [slot, setSlot] = host.nextSlot('sync-effect');
+  let [slot, setSlot] = host.nextSlot(
+    (otherSlot: Slot): otherSlot is SyncEffectSlot =>
+      otherSlot instanceof SyncEffectSlot
+  );
 
   if (!slot) {
-    slot = setSlot(new SyncEffectSlotImpl(effect, dependencies));
+    slot = setSlot(new SyncEffectSlot(effect, dependencies));
   } else {
     slot.update(effect, dependencies);
   }
 }
 
-class EffectSlotImpl implements EffectSlot {
+class EffectSlot implements Slot {
   private state:
     | {readonly triggered: false; readonly effect: Effect}
     | {readonly triggered: true; dispose?(): void};
 
   constructor(
+    private readonly async: boolean,
     effect: Effect,
     private dependencies: readonly unknown[] | undefined
   ) {
     this.state = {triggered: false, effect};
-  }
-
-  trigger(): void {
-    if (!this.state.triggered) {
-      this.state = {triggered: true, dispose: this.state.effect()!};
-    }
   }
 
   update(effect: Effect, dependencies: readonly unknown[] | undefined): void {
@@ -55,6 +58,16 @@ class EffectSlotImpl implements EffectSlot {
 
       this.state = {triggered: false, effect};
       this.dependencies = dependencies;
+    }
+  }
+
+  applyStateChanges(): boolean {
+    return false;
+  }
+
+  triggerEffect(async: boolean = false): void {
+    if (!this.state.triggered && async === this.async) {
+      this.state = {triggered: true, dispose: this.state.effect()!};
     }
   }
 
@@ -69,10 +82,14 @@ class EffectSlotImpl implements EffectSlot {
   }
 }
 
-class AsyncEffectSlotImpl extends EffectSlotImpl {
-  readonly type = 'async-effect';
+class AsyncEffectSlot extends EffectSlot {
+  constructor(effect: Effect, dependencies: readonly unknown[] | undefined) {
+    super(true, effect, dependencies);
+  }
 }
 
-class SyncEffectSlotImpl extends EffectSlotImpl {
-  readonly type = 'sync-effect';
+class SyncEffectSlot extends EffectSlot {
+  constructor(effect: Effect, dependencies: readonly unknown[] | undefined) {
+    super(false, effect, dependencies);
+  }
 }

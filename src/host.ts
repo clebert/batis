@@ -1,52 +1,12 @@
 import {Deferred, defer} from './utils/defer';
 
-export type Slot =
-  | AsyncEffectSlot
-  | SyncEffectSlot
-  | MemoSlot<unknown>
-  | StateSlot<unknown>;
-
-export interface AsyncEffectSlot extends EffectSlot {
-  readonly type: 'async-effect';
-}
-
-export interface SyncEffectSlot extends EffectSlot {
-  readonly type: 'sync-effect';
-}
-
-export interface EffectSlot {
-  trigger(): void;
-  update(effect: Effect, dependencies: readonly unknown[] | undefined): void;
-  dispose(): void;
-}
-
-export type Effect = () => (() => void) | void;
-
-export interface MemoSlot<TValue> {
-  readonly type: 'memo';
-  readonly value: TValue;
-
-  update(createValue: () => TValue, dependencies: readonly unknown[]): void;
-}
-
-export interface StateSlot<TState> {
-  readonly type: 'state';
-  readonly state: TState;
-  readonly setState: SetState<TState>;
-
-  /**
-   * Unlike React, Batis always applies all state changes, whether synchronous
-   * or asynchronous, in batches.
-   *
-   * See related React issue: https://github.com/facebook/react/issues/15027
-   */
-  applyStateChanges(): boolean;
-  dispose(): void;
-}
-
-export type SetState<TState> = (newState: TState | CreateState<TState>) => void;
-export type CreateState<TState> = (prevState: TState) => TState;
 export type AnyHook = (...args: any[]) => any;
+
+export interface Slot {
+  applyStateChanges(): boolean;
+  triggerEffect(async?: boolean): void;
+  dispose(): void;
+}
 
 export class Host<THook extends AnyHook> {
   private static activeHost: Host<AnyHook> | undefined;
@@ -81,7 +41,10 @@ export class Host<THook extends AnyHook> {
     this.args = args;
 
     try {
-      this.triggerEffects({async: true});
+      for (const slot of this.slots) {
+        slot.triggerEffect(true);
+      }
+
       this.applyStateChanges();
 
       let results: [ReturnType<THook>, ...ReturnType<THook>[]] | undefined;
@@ -110,7 +73,9 @@ export class Host<THook extends AnyHook> {
           this.slotIndex = 0;
         } while (this.applyStateChanges());
 
-        this.triggerEffects({async: false});
+        for (const slot of this.slots) {
+          slot.triggerEffect();
+        }
       } while (this.applyStateChanges());
 
       return results;
@@ -138,13 +103,7 @@ export class Host<THook extends AnyHook> {
    */
   reset(): void {
     for (const slot of this.slots) {
-      if (
-        slot.type === 'async-effect' ||
-        slot.type === 'sync-effect' ||
-        slot.type === 'state'
-      ) {
-        slot.dispose();
-      }
+      slot.dispose();
     }
 
     this.slots = [];
@@ -158,7 +117,9 @@ export class Host<THook extends AnyHook> {
    */
   triggerAsyncEffects(): void {
     try {
-      this.triggerEffects({async: true});
+      for (const slot of this.slots) {
+        slot.triggerEffect(true);
+      }
     } catch (error: unknown) {
       this.reset();
 
@@ -166,33 +127,8 @@ export class Host<THook extends AnyHook> {
     }
   }
 
-  nextSlot(
-    type: 'async-effect'
-  ): [
-    AsyncEffectSlot | undefined,
-    (newSlot: AsyncEffectSlot) => AsyncEffectSlot
-  ];
-
-  nextSlot(
-    type: 'sync-effect'
-  ): [SyncEffectSlot | undefined, (newSlot: SyncEffectSlot) => SyncEffectSlot];
-
-  nextSlot<TValue>(
-    type: 'memo'
-  ): [
-    MemoSlot<TValue> | undefined,
-    (newSlot: MemoSlot<TValue>) => MemoSlot<TValue>
-  ];
-
-  nextSlot<TState>(
-    type: 'state'
-  ): [
-    StateSlot<TState> | undefined,
-    (newSlot: StateSlot<TState>) => StateSlot<TState>
-  ];
-
   nextSlot<TSlot extends Slot>(
-    type: Slot['type']
+    predicate: (slot: Slot) => slot is TSlot
   ): [TSlot | undefined, (newSlot: TSlot) => TSlot] {
     const slotIndex = this.slotIndex++;
     const slot = this.slots[slotIndex];
@@ -201,13 +137,17 @@ export class Host<THook extends AnyHook> {
       throw new Error('The number of Hooks used must not change.');
     }
 
-    if (slot && slot.type !== type) {
+    if (slot && !predicate(slot)) {
       throw new Error('The order of the Hooks used must not change.');
     }
 
     return [
-      slot as TSlot | undefined,
-      (newSlot) => (this.slots[slotIndex] = newSlot) as TSlot,
+      slot,
+      (newSlot) => {
+        this.slots[slotIndex] = newSlot;
+
+        return newSlot;
+      },
     ];
   }
 
@@ -217,22 +157,11 @@ export class Host<THook extends AnyHook> {
     this.asyncStateChange = undefined;
   }
 
-  private triggerEffects({async}: {readonly async: boolean}): void {
-    for (const slot of this.slots) {
-      if (
-        (async && slot.type === 'async-effect') ||
-        (!async && slot.type === 'sync-effect')
-      ) {
-        slot.trigger();
-      }
-    }
-  }
-
   private applyStateChanges(): boolean {
     let changed = false;
 
     for (const slot of this.slots) {
-      if (slot.type === 'state' && slot.applyStateChanges()) {
+      if (slot.applyStateChanges()) {
         changed = true;
       }
     }

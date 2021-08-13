@@ -1,4 +1,4 @@
-import {Host, useLayoutEffect, useMemo, useState} from '.';
+import {Host, useEffect, useLayoutEffect, useMemo, useState} from '.';
 
 describe('Host', () => {
   test('using fewer Hooks causes an error', () => {
@@ -50,8 +50,8 @@ describe('Host', () => {
   test('changing the order of the Hooks used causes an error', () => {
     const hook = jest.fn((arg: string) => {
       if (arg === 'a') {
-        useState('a');
-      } else {
+        useEffect(jest.fn());
+      } else if (arg === 'b') {
         useLayoutEffect(jest.fn());
       }
 
@@ -66,7 +66,13 @@ describe('Host', () => {
       new Error('The order of the Hooks used must not change.')
     );
 
-    expect(hook).toHaveBeenCalledTimes(2);
+    expect(host.run('b')).toEqual(['b']);
+
+    expect(() => host.run('a')).toThrow(
+      new Error('The order of the Hooks used must not change.')
+    );
+
+    expect(hook).toHaveBeenCalledTimes(4);
   });
 
   test('removing the dependencies of a Hook causes an error', () => {
