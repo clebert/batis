@@ -55,35 +55,43 @@ function useGreeting(salutation) {
   }, []);
 
   useEffect(() => {
-    const handle = setTimeout(() => {
-      // Unlike React, Batis always applies all state changes, whether
-      // synchronous or asynchronous, in batches. Therefore, Janie is not
-      // greeted individually.
-      setName('Janie');
-      setName((prevName) => `${prevName} and Johnny`);
-    }, 10);
+    // Unlike React, Batis always applies all state changes, whether
+    // synchronous or asynchronous, in batches. Therefore, Janie is not
+    // greeted individually.
+    setName('Janie');
+    setName((prevName) => `${prevName} and Johnny`);
+
+    const handle = setTimeout(() => setName('World'));
 
     return () => clearTimeout(handle);
   }, []);
 
-  return useMemo(() => `${salutation} ${name}`, [salutation, name]);
+  return useMemo(() => `${salutation} ${name}!`, [salutation, name]);
 }
 ```
 
 ```js
 const greeting = new Host(useGreeting);
 
-console.log(greeting.run('Hello')); // ['Hello Jane', 'Hello John']
-console.log(greeting.run('Bonjour')); // ['Bonjour Jane']
+console.log(greeting.run('Hi'));
+console.log(greeting.rerun());
 
 greeting.reset();
 
-console.log(greeting.run('Hallo')); // ['Hallo Jane', 'Hallo John']
-console.log(greeting.run('Hola')); // ['Hola Jane']
+console.log(greeting.run('Bye'));
+console.log(greeting.rerun());
 
 await greeting.nextAsyncStateChange;
 
-console.log(greeting.run('Ciao')); // ['Ciao Janie and Johnny']
+console.log(greeting.run('Hello'));
+```
+
+```
+[ 'Hi Jane!', 'Hi John!' ]
+[ 'Hi Janie and Johnny!' ]
+[ 'Bye Jane!', 'Bye John!' ]
+[ 'Bye Janie and Johnny!' ]
+[ 'Hello World!' ]
 ```
 
 ## API reference
