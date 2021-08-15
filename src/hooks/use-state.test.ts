@@ -170,7 +170,7 @@ describe('useState()', () => {
     expect(hook).toHaveBeenCalledTimes(6);
   });
 
-  test('setting the same state does not resolve the promise', async () => {
+  test('setting the same state does not resolve the promise', () => {
     const hook = jest.fn(() => {
       const [state1, setState1] = useState('a');
       const [state2, setState2] = useState(0);
@@ -198,7 +198,7 @@ describe('useState()', () => {
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
-  test('a failed state update causes an error', async () => {
+  test('a failed state update causes an error', () => {
     const hook = jest.fn((arg: string) => {
       const [state, setState] = useState(() => {
         if (arg === 'a') {

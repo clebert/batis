@@ -1,5 +1,6 @@
 {
   "editor.formatOnSave": true,
+  "eslint.options": {"ignorePattern": "**/*.js"},
   "files.exclude": {
     "**/.git": true,
     "**/.DS_Store": true,
@@ -7,6 +8,5 @@
     "lib": true,
     "node_modules": true
   },
-  "tslint.jsEnable": true,
   "typescript.tsdk": "node_modules/typescript/lib"
 }
