@@ -80,10 +80,12 @@ describe('useState()', () => {
       const [state2] = useState(createInitialState);
 
       if (arg === 'b') {
-        setTimeout(() =>
-          setState1(() => {
-            throw new Error(arg);
-          })
+        setTimeout(
+          () =>
+            setState1(() => {
+              throw new Error(arg);
+            }),
+          0
         );
       }
 
@@ -122,8 +124,8 @@ describe('useState()', () => {
             setState1('f');
             setState2((prevState2) => (prevState2 += 1));
             setState2((prevState2) => (prevState2 += 1));
-          });
-        });
+          }, 0);
+        }, 0);
       }, []);
 
       if (state1 === 'a') {
@@ -312,10 +314,12 @@ describe('useState()', () => {
 
       useEffect(
         () =>
-          void setTimeout(() =>
-            expect(() => setState('b')).toThrow(
-              new Error('A disposed state cannot be updated.')
-            )
+          void setTimeout(
+            () =>
+              expect(() => setState('b')).toThrow(
+                new Error('A disposed state cannot be updated.')
+              ),
+            0
           ),
         []
       );
@@ -327,7 +331,7 @@ describe('useState()', () => {
     host.triggerAsyncEffects();
     host.reset();
 
-    await new Promise((resolve) => setTimeout(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(hook).toHaveBeenCalledTimes(1);
   });

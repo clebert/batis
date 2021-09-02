@@ -19,35 +19,26 @@
     "lib"
   ],
   "scripts": {
-    "build": "run-p build:*",
-    "build:cjs": "tsc --project tsconfig.cjs.json --incremental --pretty",
-    "build:esm": "tsc --project tsconfig.esm.json --incremental --pretty",
-    "ci": "run-p format:test lint test build",
+    "preci": "run-s setup",
+    "ci": "run-p compile fmt:check lint test",
     "postci": "size-limit",
-    "format": "prettier --write '**/*.{html,js,json,md,ts,tsx,yml}'",
-    "format:test": "prettier --list-different '**/*.{html,js,json,md,ts,tsx,yml}'",
-    "lint": "eslint src/**/*",
+    "compile": "run-p compile:*",
+    "compile:cjs": "tscmd compile --output cjs",
+    "compile:esm": "tscmd compile --output esm",
+    "fmt": "tscmd fmt",
+    "fmt:check": "tscmd fmt --check",
+    "lint": "tscmd lint",
     "release": "npm version",
     "postrelease": "git push --follow-tags",
+    "setup": "tscmd setup --arch node --dist package",
     "start": "node example.js",
-    "test": "jest"
+    "test": "tscmd test --coverage"
   },
   "devDependencies": {
-    "@babel/core": "^7.15.0",
-    "@babel/preset-env": "^7.15.0",
-    "@babel/preset-typescript": "^7.15.0",
+    "@clebert/tscmd": "^0.1.0",
     "@size-limit/preset-small-lib": "^5.0.3",
-    "@types/jest": "^27.0.1",
-    "@typescript-eslint/eslint-plugin": "^4.29.1",
-    "@typescript-eslint/parser": "^4.29.1",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-import": "^2.24.0",
-    "jest": "^27.0.6",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.3.2",
-    "size-limit": "^5.0.3",
-    "typescript": "^4.3.5"
+    "size-limit": "^5.0.3"
   },
   "size-limit": [
     {

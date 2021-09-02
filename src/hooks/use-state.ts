@@ -48,7 +48,7 @@ class StateSlot<TState> implements Slot {
       this.newStates.push(newState);
       clearTimeout(this.timeoutHandle);
 
-      this.timeoutHandle = setTimeout(() => host.onAsyncStateChange());
+      this.timeoutHandle = setTimeout(() => host.onAsyncStateChange(), 0);
     };
   }
 

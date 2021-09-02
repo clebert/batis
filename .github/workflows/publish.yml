@@ -22,8 +22,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build sources
-        run: npm run build
+      - name: Compile sources
+        run: |
+          npm run setup
+          npm run compile
 
       - name: Publish to npm
         env:

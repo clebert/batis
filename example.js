@@ -25,7 +25,7 @@ function useGreeting(salutation) {
     setName('Janie');
     setName((prevName) => `${prevName} and Johnny`);
 
-    const handle = setTimeout(() => setName('World'));
+    const handle = setTimeout(() => setName('World'), 0);
 
     return () => clearTimeout(handle);
   }, []);

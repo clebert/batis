@@ -98,10 +98,12 @@ describe('useLayoutEffect()', () => {
       useLayoutEffect(effect, []);
 
       if (arg === 'b') {
-        setTimeout(() =>
-          setState(() => {
-            throw new Error(arg);
-          })
+        setTimeout(
+          () =>
+            setState(() => {
+              throw new Error(arg);
+            }),
+          0
         );
       }
 

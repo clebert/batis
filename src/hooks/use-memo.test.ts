@@ -68,10 +68,12 @@ describe('useMemo()', () => {
       const [, setState] = useState(arg);
 
       if (arg === 'b') {
-        setTimeout(() =>
-          setState(() => {
-            throw new Error(arg);
-          })
+        setTimeout(
+          () =>
+            setState(() => {
+              throw new Error(arg);
+            }),
+          0
         );
       }
 
