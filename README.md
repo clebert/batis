@@ -29,15 +29,13 @@ Batis essentially revolves around the concept of a Hook and its host. Running a
 functional stateless Hook requires a host that manages the state and effects and
 reports asynchronous state changes that should result in a new run.
 
-## Getting started
-
-### Installing Batis
+## Installation
 
 ```
 npm install batis --save
 ```
 
-### Using Batis
+## Usage
 
 ```js
 import {Host, useEffect, useLayoutEffect, useMemo, useState} from 'batis';
@@ -127,5 +125,5 @@ Below you can see the subset of React Hooks implemented by Batis:
 
 ---
 
-Copyright (c) 2020-2021, Clemens Akens. Released under the terms of the
-[MIT License](https://github.com/clebert/batis/blob/master/LICENSE).
+Copyright 2020-2021 Clemens Akens. All rights reserved.
+[MIT license](https://github.com/clebert/batis/blob/master/LICENSE.md).
