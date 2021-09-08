@@ -5,6 +5,7 @@
 .eslintrc.json
 coverage
 jest.config.json
+.node-version
 node_modules
 .prettierignore
 .prettierrc.json
