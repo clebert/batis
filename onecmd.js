@@ -1,18 +1,21 @@
 // @ts-check
 
-const plugins = require('@onecmd/standard-plugins');
+const std = require('@onecmd/standard-plugins');
 const nodeVersion = '16';
 
-module.exports = [
-  plugins.babel(),
-  plugins.editorconfig(),
-  plugins.eslint(),
-  plugins.git(),
-  plugins.github({branches: ['master'], nodeVersion}),
-  plugins.jest({coverage: true}),
-  plugins.node(nodeVersion),
-  plugins.npm(),
-  plugins.prettier(),
-  plugins.typescript('node', 'package'),
-  plugins.vscode({showFilesInEditor: false}),
+/** @type {readonly import('onecmd').Plugin[]} */
+const plugins = [
+  std.babel(),
+  std.editorconfig(),
+  std.eslint(),
+  std.git(),
+  std.github({branches: ['master'], nodeVersion}),
+  std.jest({coverage: true}),
+  std.node(nodeVersion),
+  std.npm(),
+  std.prettier(),
+  std.typescript('node', 'package'),
+  std.vscode({showFilesInEditor: false}),
 ];
+
+module.exports = plugins;
