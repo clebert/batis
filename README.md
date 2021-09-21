@@ -1,4 +1,4 @@
-# Batis
+# batis
 
 [![][ci-badge]][ci-link] [![][version-badge]][version-link]
 [![][license-badge]][license-link] [![][types-badge]][types-link]
@@ -9,7 +9,7 @@
 [version-badge]: https://badgen.net/npm/v/batis
 [version-link]: https://www.npmjs.com/package/batis
 [license-badge]: https://badgen.net/npm/license/batis
-[license-link]: https://github.com/clebert/batis/blob/master/LICENSE
+[license-link]: https://github.com/clebert/batis/blob/master/LICENSE.md
 [types-badge]: https://badgen.net/npm/types/batis
 [types-link]: https://github.com/clebert/batis
 [size-badge]: https://badgen.net/bundlephobia/minzip/batis
