@@ -1,6 +1,6 @@
-import {describe, expect, jest, test} from '@jest/globals';
-import {Host} from '../host.js';
 import {useReducer} from './use-reducer.js';
+import {Host} from '../host.js';
+import {describe, expect, jest, test} from '@jest/globals';
 
 describe(`useReducer()`, () => {
   test(`an initial reducer state is set only once`, () => {

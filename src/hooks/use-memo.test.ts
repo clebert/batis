@@ -1,7 +1,7 @@
-import {describe, expect, jest, test} from '@jest/globals';
-import {Host} from '../host.js';
 import {useMemo} from './use-memo.js';
 import {useState} from './use-state.js';
+import {Host} from '../host.js';
+import {describe, expect, jest, test} from '@jest/globals';
 
 describe(`useMemo()`, () => {
   test(`a memoized value is recomputed if one of its dependencies changes`, () => {

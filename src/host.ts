@@ -1,4 +1,6 @@
-import {type Deferred, defer} from './utils/defer.js';
+import type {Deferred} from './utils/defer.js';
+
+import {defer} from './utils/defer.js';
 
 export type AnyHook = (...args: any[]) => any;
 

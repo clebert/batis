@@ -1,7 +1,7 @@
-import {describe, expect, jest, test} from '@jest/globals';
-import {Host} from '../host.js';
 import {useLayoutEffect} from './use-effect.js';
 import {useRef} from './use-ref.js';
+import {Host} from '../host.js';
+import {describe, expect, jest, test} from '@jest/globals';
 
 describe(`useRef()`, () => {
   test(`a ref object is stable and mutable`, () => {

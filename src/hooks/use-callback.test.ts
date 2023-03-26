@@ -1,6 +1,6 @@
-import {describe, expect, jest, test} from '@jest/globals';
-import {Host} from '../host.js';
 import {useCallback} from './use-callback.js';
+import {Host} from '../host.js';
+import {describe, expect, jest, test} from '@jest/globals';
 
 describe(`useCallback()`, () => {
   test(`a memoized callback changes if one of its dependencies changes`, () => {

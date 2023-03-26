@@ -1,8 +1,10 @@
-import {describe, expect, jest, test} from '@jest/globals';
-import {Host} from '../host.js';
-import {type Effect, useEffect} from './use-effect.js';
+import type {Effect} from './use-effect.js';
+
+import {useEffect} from './use-effect.js';
 import {useMemo} from './use-memo.js';
 import {useState} from './use-state.js';
+import {Host} from '../host.js';
+import {describe, expect, jest, test} from '@jest/globals';
 
 describe(`useEffect()`, () => {
   test(`an effect triggers if one of its dependencies changes`, () => {

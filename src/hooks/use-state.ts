@@ -1,4 +1,6 @@
-import {type AnyHook, Host, type Slot} from '../host.js';
+import type {AnyHook, Slot} from '../host.js';
+
+import {Host} from '../host.js';
 import {isFunction} from '../utils/is-function.js';
 
 /**

@@ -1,7 +1,9 @@
-import {describe, expect, jest, test} from '@jest/globals';
-import {Host} from '../host.js';
-import {type Effect, useLayoutEffect} from './use-effect.js';
+import type {Effect} from './use-effect.js';
+
+import {useLayoutEffect} from './use-effect.js';
 import {useState} from './use-state.js';
+import {Host} from '../host.js';
+import {describe, expect, jest, test} from '@jest/globals';
 
 describe(`useLayoutEffect()`, () => {
   test(`a layout effect triggers if one of its dependencies changes`, () => {

@@ -1,7 +1,7 @@
-import {describe, expect, jest, test} from '@jest/globals';
-import {Host} from '../host.js';
 import {useEffect, useLayoutEffect} from './use-effect.js';
 import {useState} from './use-state.js';
+import {Host} from '../host.js';
+import {describe, expect, jest, test} from '@jest/globals';
 
 describe(`useState()`, () => {
   test(`an initial state is set only once`, () => {

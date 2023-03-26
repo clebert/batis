@@ -1,4 +1,6 @@
-import {Host, type Slot} from '../host.js';
+import type {Slot} from '../host.js';
+
+import {Host} from '../host.js';
 import {isUnchanged} from '../utils/is-unchanged.js';
 
 export type Effect = () => (() => void) | void;

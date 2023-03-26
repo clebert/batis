@@ -1,8 +1,10 @@
-import {describe, expect, jest, test} from '@jest/globals';
-import {type Effect, useEffect, useLayoutEffect} from './hooks/use-effect.js';
+import type {Effect} from './hooks/use-effect.js';
+
+import {useEffect, useLayoutEffect} from './hooks/use-effect.js';
 import {useMemo} from './hooks/use-memo.js';
 import {useState} from './hooks/use-state.js';
 import {Host} from './host.js';
+import {describe, expect, jest, test} from '@jest/globals';
 
 describe(`Host`, () => {
   test(`using fewer Hooks causes an error`, () => {
