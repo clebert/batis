@@ -1,31 +1,29 @@
-// @ts-check
-
-const {
+import {
   Host,
   useEffect,
   useLayoutEffect,
   useMemo,
   useState,
-} = require('./lib/cjs');
+} from './lib/index.js';
 
 /**
  * @param {string} salutation
  */
 function useGreeting(salutation) {
-  const [name, setName] = useState('John');
+  const [name, setName] = useState(`John`);
 
   useLayoutEffect(() => {
-    setName('Jane');
+    setName(`Jane`);
   }, []);
 
   useEffect(() => {
     // Unlike React, Batis always applies all state changes, whether
     // synchronous or asynchronous, in batches. Therefore, Janie is not
     // greeted individually.
-    setName('Janie');
+    setName(`Janie`);
     setName((prevName) => `${prevName} and Johnny`);
 
-    const handle = setTimeout(() => setName('World'), 0);
+    const handle = setTimeout(() => setName(`World`), 0);
 
     return () => clearTimeout(handle);
   }, []);
@@ -33,18 +31,18 @@ function useGreeting(salutation) {
   return useMemo(() => `${salutation} ${name}!`, [salutation, name]);
 }
 
-(async () => {
+await (async () => {
   const greeting = new Host(useGreeting);
 
-  console.log(greeting.run('Hi'));
+  console.log(greeting.run(`Hi`));
   console.log(greeting.rerun());
 
   greeting.reset();
 
-  console.log(greeting.run('Bye'));
+  console.log(greeting.run(`Bye`));
   console.log(greeting.rerun());
 
   await greeting.nextAsyncStateChange;
 
-  console.log(greeting.run('Hello'));
-})().catch((error) => console.error('Oops!', error));
+  console.log(greeting.run(`Hello`));
+})();

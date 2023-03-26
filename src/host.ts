@@ -1,4 +1,4 @@
-import {Deferred, defer} from './utils/defer';
+import {type Deferred, defer} from './utils/defer.js';
 
 export type AnyHook = (...args: any[]) => any;
 
@@ -13,7 +13,7 @@ export class Host<THook extends AnyHook> {
 
   static get active(): Host<AnyHook> {
     if (!this.activeHost) {
-      throw new Error('A Hook cannot be used without an active host.');
+      throw new Error(`A Hook cannot be used without an active host.`);
     }
 
     return this.activeHost;
@@ -66,7 +66,7 @@ export class Host<THook extends AnyHook> {
           }
 
           if (this.slotIndex !== this.slots.length) {
-            throw new Error('The number of Hooks used must not change.');
+            throw new Error(`The number of Hooks used must not change.`);
           }
 
           this.slotsAllocated = true;
@@ -91,7 +91,7 @@ export class Host<THook extends AnyHook> {
    */
   rerun(): readonly [ReturnType<THook>, ...ReturnType<THook>[]] {
     if (!this.args) {
-      throw new Error('A Hook that has never been run cannot be rerun.');
+      throw new Error(`A Hook that has never been run cannot be rerun.`);
     }
 
     return this.run(...this.args);
@@ -128,17 +128,17 @@ export class Host<THook extends AnyHook> {
   }
 
   nextSlot<TSlot extends Slot>(
-    predicate: (slot: Slot) => slot is TSlot
+    predicate: (slot: Slot) => slot is TSlot,
   ): [TSlot | undefined, (newSlot: TSlot) => TSlot] {
     const slotIndex = this.slotIndex++;
     const slot = this.slots[slotIndex];
 
     if (!slot && this.slotsAllocated) {
-      throw new Error('The number of Hooks used must not change.');
+      throw new Error(`The number of Hooks used must not change.`);
     }
 
     if (slot && !predicate(slot)) {
-      throw new Error('The order of the Hooks used must not change.');
+      throw new Error(`The order of the Hooks used must not change.`);
     }
 
     return [

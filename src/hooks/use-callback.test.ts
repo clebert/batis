@@ -1,14 +1,16 @@
-import {Host, useCallback} from '..';
+import {describe, expect, jest, test} from '@jest/globals';
+import {Host} from '../host.js';
+import {useCallback} from './use-callback.js';
 
-describe('useCallback()', () => {
-  test('a memoized callback changes if one of its dependencies changes', () => {
+describe(`useCallback()`, () => {
+  test(`a memoized callback changes if one of its dependencies changes`, () => {
     const hook = jest.fn(
       (
         callback1: jest.Mock,
         callback2: jest.Mock,
         arg1: string,
-        arg2: number
-      ) => [useCallback(callback1, []), useCallback(callback2, [arg1, arg2])]
+        arg2: number,
+      ) => [useCallback(callback1, []), useCallback(callback2, [arg1, arg2])],
     );
 
     const callbackA = jest.fn();
@@ -24,23 +26,23 @@ describe('useCallback()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run(callbackA, callbackB, 'a', 0)).toEqual([
+    expect(host.run(callbackA, callbackB, `a`, 0)).toEqual([
       [callbackA, callbackB],
     ]);
 
-    expect(host.run(callbackC, callbackD, 'a', 0)).toEqual([
+    expect(host.run(callbackC, callbackD, `a`, 0)).toEqual([
       [callbackA, callbackB],
     ]);
 
-    expect(host.run(callbackE, callbackF, 'a', 1)).toEqual([
+    expect(host.run(callbackE, callbackF, `a`, 1)).toEqual([
       [callbackA, callbackF],
     ]);
 
-    expect(host.run(callbackG, callbackH, 'b', 1)).toEqual([
+    expect(host.run(callbackG, callbackH, `b`, 1)).toEqual([
       [callbackA, callbackH],
     ]);
 
-    expect(host.run(callbackI, callbackJ, 'b', 1)).toEqual([
+    expect(host.run(callbackI, callbackJ, `b`, 1)).toEqual([
       [callbackA, callbackH],
     ]);
 

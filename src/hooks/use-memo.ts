@@ -1,15 +1,15 @@
-import {Host, Slot} from '../host';
-import {isUnchanged} from '../utils/is-unchanged';
+import {Host, type Slot} from '../host.js';
+import {isUnchanged} from '../utils/is-unchanged.js';
 
 export function useMemo<TValue>(
   createValue: () => TValue,
-  dependencies: readonly unknown[]
+  dependencies: readonly unknown[],
 ): TValue {
   const host = Host.active;
 
   let [slot, setSlot] = host.nextSlot(
     (otherSlot: Slot): otherSlot is MemoSlot<TValue> =>
-      otherSlot instanceof MemoSlot
+      otherSlot instanceof MemoSlot,
   );
 
   if (!slot) {

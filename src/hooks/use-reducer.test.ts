@@ -1,7 +1,9 @@
-import {Host, useReducer} from '..';
+import {describe, expect, jest, test} from '@jest/globals';
+import {Host} from '../host.js';
+import {useReducer} from './use-reducer.js';
 
-describe('useReducer()', () => {
-  test('an initial reducer state is set only once', () => {
+describe(`useReducer()`, () => {
+  test(`an initial reducer state is set only once`, () => {
     let i = 0;
 
     const init = jest.fn((initialArg: string) => initialArg + (i += 1));
@@ -15,22 +17,22 @@ describe('useReducer()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run('a')).toEqual([['a', 'a1']]);
-    expect(host.run('b')).toEqual([['a', 'a1']]);
+    expect(host.run(`a`)).toEqual([[`a`, `a1`]]);
+    expect(host.run(`b`)).toEqual([[`a`, `a1`]]);
     expect(init).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('reducing a new state resolves the promise', () => {
+  test(`reducing a new state resolves the promise`, () => {
     const hook = jest.fn(() => {
       const [state, dispatch] = useReducer(
         (prevState: string, action: string) => prevState + action,
-        'a'
+        `a`,
       );
 
-      if (state === 'a') {
-        dispatch('b');
-        dispatch('c');
+      if (state === `a`) {
+        dispatch(`b`);
+        dispatch(`c`);
       }
 
       return state;
@@ -38,20 +40,20 @@ describe('useReducer()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run()).toEqual(['abc', 'a']);
+    expect(host.run()).toEqual([`abc`, `a`]);
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('reducing the same state does not resolve the promise', () => {
+  test(`reducing the same state does not resolve the promise`, () => {
     const hook = jest.fn(() => {
       const [state, dispatch] = useReducer(
         (prevState: string) => prevState,
-        'a'
+        `a`,
       );
 
-      if (state === 'a') {
-        dispatch('b');
-        dispatch('c');
+      if (state === `a`) {
+        dispatch(`b`);
+        dispatch(`c`);
       }
 
       return state;
@@ -59,23 +61,23 @@ describe('useReducer()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run()).toEqual(['a']);
+    expect(host.run()).toEqual([`a`]);
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
-  test('the identity of a dispatch function is stable', () => {
+  test(`the identity of a dispatch function is stable`, () => {
     const dispatchIdentities = new Set();
 
     const hook = jest.fn(() => {
       const [state, dispatch] = useReducer(
         (prevState: string, action: string) => prevState + action,
-        'a'
+        `a`,
       );
 
       dispatchIdentities.add(dispatch);
 
-      if (state === 'a') {
-        dispatch('b');
+      if (state === `a`) {
+        dispatch(`b`);
       }
 
       return state;
@@ -83,8 +85,8 @@ describe('useReducer()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run()).toEqual(['ab', 'a']);
-    expect(host.rerun()).toEqual(['ab']);
+    expect(host.run()).toEqual([`ab`, `a`]);
+    expect(host.rerun()).toEqual([`ab`]);
     expect(dispatchIdentities.size).toBe(1);
     expect(hook).toHaveBeenCalledTimes(3);
   });

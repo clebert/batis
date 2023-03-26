@@ -1,7 +1,10 @@
-import {Host, useEffect, useLayoutEffect, useState} from '..';
+import {describe, expect, jest, test} from '@jest/globals';
+import {Host} from '../host.js';
+import {useEffect, useLayoutEffect} from './use-effect.js';
+import {useState} from './use-state.js';
 
-describe('useState()', () => {
-  test('an initial state is set only once', () => {
+describe(`useState()`, () => {
+  test(`an initial state is set only once`, () => {
     let i = 0;
 
     const createInitialState = jest.fn(() => (i += 1));
@@ -15,13 +18,13 @@ describe('useState()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run('a')).toEqual([['a', 1]]);
-    expect(host.run('b')).toEqual([['a', 1]]);
+    expect(host.run(`a`)).toEqual([[`a`, 1]]);
+    expect(host.run(`b`)).toEqual([[`a`, 1]]);
     expect(createInitialState).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(2);
   });
 
-  test('an initial state is reset after a reset', () => {
+  test(`an initial state is reset after a reset`, () => {
     let i = 0;
 
     const createInitialState = jest.fn(() => (i += 1));
@@ -35,17 +38,17 @@ describe('useState()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run('a')).toEqual([['a', 1]]);
-    expect(host.run('b')).toEqual([['a', 1]]);
+    expect(host.run(`a`)).toEqual([[`a`, 1]]);
+    expect(host.run(`b`)).toEqual([[`a`, 1]]);
 
     host.reset();
 
-    expect(host.run('c')).toEqual([['c', 2]]);
+    expect(host.run(`c`)).toEqual([[`c`, 2]]);
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
-  test('an initial state is reset after a synchronous error', () => {
+  test(`an initial state is reset after a synchronous error`, () => {
     let i = 0;
 
     const createInitialState = jest.fn(() => (i += 1));
@@ -54,7 +57,7 @@ describe('useState()', () => {
       const [state1] = useState(arg);
       const [state2] = useState(createInitialState);
 
-      if (arg === 'b') {
+      if (arg === `b`) {
         throw new Error(arg);
       }
 
@@ -63,14 +66,14 @@ describe('useState()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run('a')).toEqual([['a', 1]]);
-    expect(() => host.run('b')).toThrow(new Error('b'));
-    expect(host.run('c')).toEqual([['c', 2]]);
+    expect(host.run(`a`)).toEqual([[`a`, 1]]);
+    expect(() => host.run(`b`)).toThrow(new Error(`b`));
+    expect(host.run(`c`)).toEqual([[`c`, 2]]);
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
-  test('an initial state is reset after an asynchronous error', async () => {
+  test(`an initial state is reset after an asynchronous error`, async () => {
     let i = 0;
 
     const createInitialState = jest.fn(() => (i += 1));
@@ -79,13 +82,13 @@ describe('useState()', () => {
       const [state1, setState1] = useState(arg);
       const [state2] = useState(createInitialState);
 
-      if (arg === 'b') {
+      if (arg === `b`) {
         setTimeout(
           () =>
             setState1(() => {
               throw new Error(arg);
             }),
-          0
+          0,
         );
       }
 
@@ -94,48 +97,48 @@ describe('useState()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run('a')).toEqual([['a', 1]]);
-    expect(host.run('b')).toEqual([['a', 1]]);
+    expect(host.run(`a`)).toEqual([[`a`, 1]]);
+    expect(host.run(`b`)).toEqual([[`a`, 1]]);
 
     await host.nextAsyncStateChange;
 
-    expect(() => host.run('c')).toThrow(new Error('b'));
-    expect(host.run('d')).toEqual([['d', 2]]);
+    expect(() => host.run(`c`)).toThrow(new Error(`b`));
+    expect(host.run(`d`)).toEqual([[`d`, 2]]);
     expect(createInitialState).toHaveBeenCalledTimes(2);
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
-  test('setting a new state resolves the promise', async () => {
+  test(`setting a new state resolves the promise`, async () => {
     const hook = jest.fn(() => {
-      const [state1, setState1] = useState('a');
+      const [state1, setState1] = useState(`a`);
       const [state2, setState2] = useState(0);
 
       useLayoutEffect(() => {
-        setState1('c');
+        setState1(`c`);
         setState2((prevState2) => (prevState2 += 1));
         setState2((prevState2) => (prevState2 += 1));
 
         setTimeout(() => {
-          setState1('d');
+          setState1(`d`);
           setState2((prevState2) => (prevState2 += 1));
           setState2((prevState2) => (prevState2 += 1));
 
           setTimeout(() => {
-            setState1('f');
+            setState1(`f`);
             setState2((prevState2) => (prevState2 += 1));
             setState2((prevState2) => (prevState2 += 1));
           }, 0);
         }, 0);
       }, []);
 
-      if (state1 === 'a') {
-        setState1('b');
+      if (state1 === `a`) {
+        setState1(`b`);
         setState2((prevState2) => (prevState2 += 1));
         setState2((prevState2) => (prevState2 += 1));
       }
 
-      if (state1 === 'd') {
-        setState1('e');
+      if (state1 === `d`) {
+        setState1(`e`);
         setState2((prevState2) => (prevState2 += 1));
         setState2((prevState2) => (prevState2 += 1));
       }
@@ -146,9 +149,9 @@ describe('useState()', () => {
     const host = new Host(hook);
 
     expect(host.run()).toEqual([
-      ['c', 4],
-      ['b', 2],
-      ['a', 0],
+      [`c`, 4],
+      [`b`, 2],
+      [`a`, 0],
     ]);
 
     const nextAsyncStateChange1 = host.nextAsyncStateChange;
@@ -158,8 +161,8 @@ describe('useState()', () => {
     await nextAsyncStateChange1;
 
     expect(host.rerun()).toEqual([
-      ['e', 8],
-      ['d', 6],
+      [`e`, 8],
+      [`d`, 6],
     ]);
 
     const nextAsyncStateChange2 = host.nextAsyncStateChange;
@@ -168,25 +171,25 @@ describe('useState()', () => {
 
     await nextAsyncStateChange2;
 
-    expect(host.rerun()).toEqual([['f', 10]]);
+    expect(host.rerun()).toEqual([[`f`, 10]]);
     expect(hook).toHaveBeenCalledTimes(6);
   });
 
-  test('setting the same state does not resolve the promise', () => {
+  test(`setting the same state does not resolve the promise`, () => {
     const hook = jest.fn(() => {
-      const [state1, setState1] = useState('a');
+      const [state1, setState1] = useState(`a`);
       const [state2, setState2] = useState(0);
 
       useLayoutEffect(() => {
-        setState1('c');
-        setState1('a');
+        setState1(`c`);
+        setState1(`a`);
         setState2((prevState2) => (prevState2 += 1));
         setState2((prevState2) => (prevState2 -= 1));
       }, []);
 
-      if (state1 === 'a') {
-        setState1('b');
-        setState1('a');
+      if (state1 === `a`) {
+        setState1(`b`);
+        setState1(`a`);
         setState2((prevState2) => (prevState2 += 1));
         setState2((prevState2) => (prevState2 -= 1));
       }
@@ -196,21 +199,21 @@ describe('useState()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run()).toEqual([['a', 0]]);
+    expect(host.run()).toEqual([[`a`, 0]]);
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
-  test('a failed state update causes an error', () => {
+  test(`a failed state update causes an error`, () => {
     const hook = jest.fn((arg: string) => {
       const [state, setState] = useState(() => {
-        if (arg === 'a') {
+        if (arg === `a`) {
           throw new Error(arg);
         }
 
         return arg;
       });
 
-      if (state === 'b') {
+      if (state === `b`) {
         setState(() => {
           throw new Error(arg);
         });
@@ -221,30 +224,30 @@ describe('useState()', () => {
 
     const host = new Host(hook);
 
-    expect(() => host.run('a')).toThrow(new Error('a'));
-    expect(() => host.run('b')).toThrow(new Error('b'));
-    expect(host.run('c')).toEqual(['c']);
+    expect(() => host.run(`a`)).toThrow(new Error(`a`));
+    expect(() => host.run(`b`)).toThrow(new Error(`b`));
+    expect(host.run(`c`)).toEqual([`c`]);
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
-  test('synchronous external state changes are applied before another run', () => {
-    const hook = jest.fn(() => useState('a'));
+  test(`synchronous external state changes are applied before another run`, () => {
+    const hook = jest.fn(() => useState(`a`));
     const host = new Host(hook);
     const [[state1, setState]] = host.run();
 
-    expect(state1).toBe('a');
+    expect(state1).toBe(`a`);
 
-    const createState = jest.fn(() => 'b');
+    const createState = jest.fn(() => `b`);
 
     setState(createState);
     expect(createState).toHaveBeenCalledTimes(0);
-    expect(host.run()).toEqual([['b', setState]]);
-    expect(host.rerun()).toEqual([['b', setState]]);
+    expect(host.run()).toEqual([[`b`, setState]]);
+    expect(host.rerun()).toEqual([[`b`, setState]]);
     expect(createState).toHaveBeenCalledTimes(1);
     expect(hook).toHaveBeenCalledTimes(3);
   });
 
-  test('the identity of a setState function is stable until a reset', () => {
+  test(`the identity of a setState function is stable until a reset`, () => {
     const setStateIdentities = new Set();
 
     const hook = jest.fn((arg: string) => {
@@ -252,12 +255,12 @@ describe('useState()', () => {
 
       setStateIdentities.add(setState);
 
-      if (state === 'a') {
-        setState('b');
+      if (state === `a`) {
+        setState(`b`);
       }
 
-      if (state === 'c') {
-        setState('d');
+      if (state === `c`) {
+        setState(`d`);
       }
 
       return state;
@@ -265,17 +268,17 @@ describe('useState()', () => {
 
     const host = new Host(hook);
 
-    expect(host.run('a')).toEqual(['b', 'a']);
-    expect(host.run('c')).toEqual(['b']);
+    expect(host.run(`a`)).toEqual([`b`, `a`]);
+    expect(host.run(`c`)).toEqual([`b`]);
 
     host.reset();
 
-    expect(host.rerun()).toEqual(['d', 'c']);
+    expect(host.rerun()).toEqual([`d`, `c`]);
     expect(setStateIdentities.size).toBe(2);
     expect(hook).toHaveBeenCalledTimes(5);
   });
 
-  test('the identity of a setState function is stable until an error occurs', () => {
+  test(`the identity of a setState function is stable until an error occurs`, () => {
     const setStateIdentities = new Set();
 
     const hook = jest.fn((arg: string) => {
@@ -283,16 +286,16 @@ describe('useState()', () => {
 
       setStateIdentities.add(setState);
 
-      if (state === 'a') {
-        setState('b');
+      if (state === `a`) {
+        setState(`b`);
       }
 
-      if (state === 'b') {
-        throw new Error('b');
+      if (state === `b`) {
+        throw new Error(`b`);
       }
 
-      if (state === 'c') {
-        setState('d');
+      if (state === `c`) {
+        setState(`d`);
       }
 
       return state;
@@ -300,28 +303,28 @@ describe('useState()', () => {
 
     const host = new Host(hook);
 
-    expect(() => host.run('a')).toThrow(new Error('b'));
-    expect(host.run('c')).toEqual(['d', 'c']);
+    expect(() => host.run(`a`)).toThrow(new Error(`b`));
+    expect(host.run(`c`)).toEqual([`d`, `c`]);
     expect(setStateIdentities.size).toBe(2);
     expect(hook).toHaveBeenCalledTimes(4);
   });
 
-  test('updating a disposed state causes an error', async () => {
+  test(`updating a disposed state causes an error`, async () => {
     expect.assertions(2);
 
     const hook = jest.fn(() => {
-      const [, setState] = useState('a');
+      const [, setState] = useState(`a`);
 
       useEffect(
         () =>
           void setTimeout(
             () =>
-              expect(() => setState('b')).toThrow(
-                new Error('A disposed state cannot be updated.')
+              expect(() => setState(`b`)).toThrow(
+                new Error(`A disposed state cannot be updated.`),
               ),
-            0
+            0,
           ),
-        []
+        [],
       );
     });
 

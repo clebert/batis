@@ -1,5 +1,5 @@
-import {AnyHook, Host, Slot} from '../host';
-import {isFunction} from '../utils/is-function';
+import {type AnyHook, Host, type Slot} from '../host.js';
+import {isFunction} from '../utils/is-function.js';
 
 /**
  * Unlike React, Batis always applies all state changes, whether synchronous
@@ -11,21 +11,21 @@ export type SetState<TState> = (newState: TState | CreateState<TState>) => void;
 export type CreateState<TState> = (prevState: TState) => TState;
 
 export function useState<TState>(
-  initialState: TState | (() => TState)
+  initialState: TState | (() => TState),
 ): readonly [TState, SetState<TState>] {
   const host = Host.active;
 
   let [slot, setSlot] = host.nextSlot(
     (otherSlot: Slot): otherSlot is StateSlot<TState> =>
-      otherSlot instanceof StateSlot
+      otherSlot instanceof StateSlot,
   );
 
   if (!slot) {
     slot = setSlot(
       new StateSlot(
         host,
-        isFunction<() => TState>(initialState) ? initialState() : initialState
-      )
+        isFunction<() => TState>(initialState) ? initialState() : initialState,
+      ),
     );
   }
 
@@ -42,7 +42,7 @@ class StateSlot<TState> implements Slot {
   constructor(host: Host<AnyHook>, public state: TState) {
     this.setState = (newState) => {
       if (this.disposed) {
-        throw new Error('A disposed state cannot be updated.');
+        throw new Error(`A disposed state cannot be updated.`);
       }
 
       this.newStates.push(newState);

@@ -1,22 +1,7 @@
 # batis
 
-[![][ci-badge]][ci-link] [![][version-badge]][version-link]
-[![][license-badge]][license-link] [![][types-badge]][types-link]
-[![][size-badge]][size-link]
-
-[ci-badge]: https://github.com/clebert/batis/workflows/CI/badge.svg
-[ci-link]: https://github.com/clebert/batis
-[version-badge]: https://badgen.net/npm/v/batis
-[version-link]: https://www.npmjs.com/package/batis
-[license-badge]: https://badgen.net/npm/license/batis
-[license-link]: https://github.com/clebert/batis/blob/master/LICENSE.md
-[types-badge]: https://badgen.net/npm/types/batis
-[types-link]: https://github.com/clebert/batis
-[size-badge]: https://badgen.net/bundlephobia/minzip/batis
-[size-link]: https://bundlephobia.com/result?p=batis
-
-General reactive JavaScript programming using the idea of
-[React Hooks](https://reactjs.org/docs/hooks-intro.html).
+> General reactive JavaScript programming using the idea of
+> [React Hooks](https://reactjs.org/docs/hooks-intro.html).
 
 ## Introduction
 
@@ -32,7 +17,7 @@ reports asynchronous state changes that should result in a new run.
 ## Installation
 
 ```
-npm install batis --save
+npm install batis
 ```
 
 ## Usage
@@ -43,20 +28,20 @@ import {Host, useEffect, useLayoutEffect, useMemo, useState} from 'batis';
 
 ```js
 function useGreeting(salutation) {
-  const [name, setName] = useState('John');
+  const [name, setName] = useState(`John`);
 
   useLayoutEffect(() => {
-    setName('Jane');
+    setName(`Jane`);
   }, []);
 
   useEffect(() => {
     // Unlike React, Batis always applies all state changes, whether
     // synchronous or asynchronous, in batches. Therefore, Janie is not
     // greeted individually.
-    setName('Janie');
+    setName(`Janie`);
     setName((prevName) => `${prevName} and Johnny`);
 
-    const handle = setTimeout(() => setName('World'), 0);
+    const handle = setTimeout(() => setName(`World`), 0);
 
     return () => clearTimeout(handle);
   }, []);
@@ -68,17 +53,17 @@ function useGreeting(salutation) {
 ```js
 const greeting = new Host(useGreeting);
 
-console.log(greeting.run('Hi'));
+console.log(greeting.run(`Hi`));
 console.log(greeting.rerun());
 
 greeting.reset();
 
-console.log(greeting.run('Bye'));
+console.log(greeting.run(`Bye`));
 console.log(greeting.rerun());
 
 await greeting.nextAsyncStateChange;
 
-console.log(greeting.run('Hello'));
+console.log(greeting.run(`Hello`));
 ```
 
 ```
@@ -122,8 +107,3 @@ Below you can see the subset of React Hooks implemented by Batis:
 [useimperativehandle]:
   https://reactjs.org/docs/hooks-reference.html#useimperativehandle
 [usedebugvalue]: https://reactjs.org/docs/hooks-reference.html#usedebugvalue
-
----
-
-Copyright 2020-2021 Clemens Akens. All rights reserved.
-[MIT license](https://github.com/clebert/batis/blob/master/LICENSE.md).

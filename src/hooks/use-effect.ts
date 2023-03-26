@@ -1,17 +1,17 @@
-import {Host, Slot} from '../host';
-import {isUnchanged} from '../utils/is-unchanged';
+import {Host, type Slot} from '../host.js';
+import {isUnchanged} from '../utils/is-unchanged.js';
 
 export type Effect = () => (() => void) | void;
 
 export function useEffect(
   effect: Effect,
-  dependencies?: readonly unknown[]
+  dependencies?: readonly unknown[],
 ): void {
   const host = Host.active;
 
   let [slot, setSlot] = host.nextSlot(
     (otherSlot: Slot): otherSlot is AsyncEffectSlot =>
-      otherSlot instanceof AsyncEffectSlot
+      otherSlot instanceof AsyncEffectSlot,
   );
 
   if (!slot) {
@@ -23,13 +23,13 @@ export function useEffect(
 
 export function useLayoutEffect(
   effect: Effect,
-  dependencies?: readonly unknown[]
+  dependencies?: readonly unknown[],
 ): void {
   const host = Host.active;
 
   let [slot, setSlot] = host.nextSlot(
     (otherSlot: Slot): otherSlot is SyncEffectSlot =>
-      otherSlot instanceof SyncEffectSlot
+      otherSlot instanceof SyncEffectSlot,
   );
 
   if (!slot) {
@@ -47,7 +47,7 @@ class EffectSlot implements Slot {
   constructor(
     private readonly async: boolean,
     effect: Effect,
-    private dependencies: readonly unknown[] | undefined
+    private dependencies: readonly unknown[] | undefined,
   ) {
     this.state = {triggered: false, effect};
   }
@@ -76,7 +76,7 @@ class EffectSlot implements Slot {
       try {
         this.state.dispose?.();
       } catch (error) {
-        console.error('An effect could not be disposed.', error);
+        console.error(`An effect could not be disposed.`, error);
       }
     }
   }
